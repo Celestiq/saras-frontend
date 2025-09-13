@@ -923,6 +923,10 @@
     position: relative;
   }
 
+  .static {
+    position: static;
+  }
+
   .sticky {
     position: -webkit-sticky;
     position: sticky;
@@ -2886,6 +2890,10 @@
 
   .zoom-in-95 {
     --tw-enter-scale: .95;
+  }
+
+  .running {
+    animation-play-state: running;
   }
 
   @media (hover: hover) {

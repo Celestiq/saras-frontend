@@ -1,5 +1,5 @@
 /* --- FONTS --- */
-/* Correctly imports both Merriweather (for body) and Playfair Display (for headings) */
+
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Playfair+Display:wght@700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
