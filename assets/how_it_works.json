@@ -1,0 +1,74 @@
+[
+  {
+    "title": "Product Manager",
+    "name": "Sara",
+    "image": "/assets/sara.png",
+    "hook": "Sara is a Product Manager at a SaaS startup. She wants to quickly learn UX design to collaborate better with her team, but doesn’t have time to sort through scattered blogs and videos.",
+    "roadmap_description": "In just seconds, Saras generates a clear 28-day roadmap for Sara. She can review it, refine modules to match her goals, and instantly see a personalized learning plan designed for her busy schedule.",
+    "roadmap_modules": [
+      "Module 1: Design Principles",
+      "Module 2: User Research",
+      "Module 3: Prototyping",
+      "Module 4: Validation"
+    ],
+    "roadmap_image": "/assets/roadmap-sara.png",
+    "opted": {
+      "option": "newsletter",
+      "text": "Sara chooses the Daily Newsletter for $2 so she can learn one chapter each morning while managing her busy schedule."
+    }
+  },
+  {
+    "title": "Researcher",
+    "name": "Sari",
+    "image": "/assets/sari.png",
+    "hook": "Sari is a graduate student working on AI ethics. She needs a structured overview of concepts but finds academic papers overwhelming.",
+    "roadmap_description": "Saras instantly builds a 28-day roadmap for Sari. She can fine-tune it to emphasize certain laws or regions, ensuring her research path is both comprehensive and focused.",
+    "roadmap_modules": [
+      "Module 1: Foundations of AI Ethics",
+      "Module 2: Bias & Fairness",
+      "Module 3: Governance & Regulations",
+      "Module 4: Case Studies"
+    ],
+    "roadmap_image": "/assets/roadmap-sari.png",
+    "opted": {
+      "option": "ebook",
+      "text": "Sari downloads the Full Instant eBook for $3 so she can reference it quickly for her thesis."
+    }
+  },
+  {
+    "title": "DIY Enthusiast",
+    "name": "Sera",
+    "image": "/assets/sera.png",
+    "hook": "Sera loves DIY projects and wants to try woodworking to build her first bookshelf, but doesn’t know where to start.",
+    "roadmap_description": "Saras quickly lays out a beginner-friendly 28-day roadmap for Sera. She can adjust it to fit her style — adding eco-friendly finishes or swapping modules for specific projects.",
+    "roadmap_modules": [
+      "Module 1: Tools & Safety",
+      "Module 2: Joinery Basics",
+      "Module 3: Beginner Projects",
+      "Module 4: Finishing & Care"
+    ],
+    "roadmap_image": "/assets/roadmap-sera.png",
+    "opted": {
+      "option": "newsletter",
+      "text": "Sera picks the Daily Newsletter for $2, so she can practice a small woodworking skill each evening."
+    }
+  },
+  {
+    "title": "Student",
+    "name": "Sarae",
+    "image": "/assets/sarae.png",
+    "hook": "Sarae is an undergraduate who wants to get better at managing her money. She feels lost when it comes to budgeting, investing, or even filing taxes.",
+    "roadmap_description": "Saras creates a full 28-day roadmap for Sarae in no time. She can refine it by adding or replacing modules — like including cryptocurrency basics to make it more relevant.",
+    "roadmap_modules": [
+      "Module 1: Budgeting & Saving",
+      "Module 2: Credit & Debt",
+      "Module 3: Investing Basics",
+      "Module 4: Taxes & Planning"
+    ],
+    "roadmap_image": "/assets/roadmap-sarae.png",
+    "opted": {
+      "option": "ebook",
+      "text": "Sarae buys the Full Instant eBook for $3 so she can learn everything at once before her internship starts."
+    }
+  }
+]

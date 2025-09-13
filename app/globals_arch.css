@@ -1,0 +1,100 @@
+ @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success); /* Custom color added */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-inter); /* Updated for Inter font */
+  --font-display: var(--font-playfair-display); /* Added for Playfair Display */
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* --- Your Custom Palette from the PRD --- */
+  --background: #fafaf9; /* Off-white */
+  --foreground: #0f172a; /* Charcoal */
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #6366f1; /* Indigo (from PRD accent) */
+  --primary-foreground: #ffffff;
+
+  --secondary: #2563eb; /* Deep Blue (from PRD) */
+  --secondary-foreground: #ffffff;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #e0e7ff; /* Lighter Indigo for hover/backgrounds */
+  --accent-foreground: #3730a3;
+
+  --destructive: #ef4444;
+  --success: #84cc16; /* Sage Green (from PRD) */
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #6366f1; /* Indigo */
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* --- Dark Theme (Optional - can be configured later) --- */
+  --background: #0f172a;
+  --foreground: #fafaf9;
+  --card: #1e293b;
+  --card-foreground: #fafaf9;
+  --popover: #1e293b;
+  --popover-foreground: #fafaf9;
+  --primary: #818cf8;
+  --primary-foreground: #0f172a;
+  --secondary: #60a5fa;
+  --secondary-foreground: #0f172a;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #334155;
+  --accent-foreground: #fafaf9;
+  --destructive: #f87171;
+  --success: #a3e635;
+  --border: #334155;
+  --input: #334155;
+  --ring: #818cf8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

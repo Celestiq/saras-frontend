@@ -1,0 +1,172 @@
+/* --- FONTS --- */
+/* Correctly imports both Merriweather (for body) and Playfair Display (for headings) */
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-merriweather);
+  --font-display: var(--font-playfair-display);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* --- Lively Antique Light Theme --- */
+:root {
+  /* --- FONT FIX: Defining the font variables --- */
+  --font-merriweather: 'Merriweather', serif;
+  --font-playfair-display: 'Playfair Display', serif;
+
+  /* --- NEW PALETTE --- */
+  --background: #fdf6e3; /* Warm Parchment */
+  --foreground: #3a3a3a; /* Softer Black Ink */
+
+  --card: #ffffff;
+  --card-foreground: #3a3a3a;
+
+  --popover: #ffffff;
+  --popover-foreground: #3a3a3a;
+
+  --primary: #c59b6d; /* Gilded Gold / Ochre */
+  --primary-foreground: #ffffff;
+
+  --secondary: #8c4b4b; /* Leather Burgundy */
+  --secondary-foreground: #fdf6e3;
+
+  --muted: #e9e5de; /* Subtle variation of paper */
+  --muted-foreground: #6a6a6a; /* Lighter ink */
+
+  --accent: #f3eee5; /* Very light parchment for hover */
+  --accent-foreground: #c59b6d;
+
+  --destructive: #a25b5b; /* Muted, classic red */
+  --success: #5c7d4a; /* Muted, classic green */
+
+  --border: #d9d5ce;
+  --input: #d9d5ce;
+  --ring: #c59b6d;
+  
+  --radius: 0.5rem;
+}
+
+/* --- Lively Antique Dark Theme --- */
+.dark {
+  --font-merriweather: 'Merriweather', serif;
+  --font-playfair-display: 'Playfair Display', serif;
+
+  --background: #3a3a3a; /* Softer Black */
+  --foreground: #fdf6e3; /* Warm Parchment */
+
+  --card: #4a4a4a;
+  --card-foreground: #fdf6e3;
+
+  --popover: #4a4a4a;
+  --popover-foreground: #fdf6e3;
+
+  --primary: #d5ab8d; /* Lighter Gold */
+  --primary-foreground: #3a3a3a;
+
+  --secondary: #ac6b6b; /* Lighter Burgundy */
+  --secondary-foreground: #3a3a3a;
+
+  --muted: #5a5a5a;
+  --muted-foreground: #a0a0a0;
+
+  --accent: #5a5a5a;
+  --accent-foreground: #fdf6e3;
+
+  --destructive: #c37676;
+  --success: #7c9d6a;
+
+  --border: #6a6a6a;
+  --input: #6a6a6a;
+  --ring: #d5ab8d;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+@keyframes text-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-text-gradient {
+  animation: text-gradient 3s ease infinite;
+}
+
+@keyframes pulse-light {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-light {
+  animation: pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
