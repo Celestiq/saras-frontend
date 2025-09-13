@@ -1,7 +1,7 @@
 // frontend/app/create/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -271,6 +271,7 @@ function CartPanel() {
   const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
   const [isCheckingCredits, setIsCheckingCredits] = useState(false);
   const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
+  const isCheckingCreditsRef = useRef(false);
 
   const handlePayPalCheckout = async () => {
     try {
@@ -284,69 +285,58 @@ function CartPanel() {
   };
 
   const handleCreditCheckout = async () => {
-    console.log('[CART_PANEL] Starting credit checkout process');
-    console.log('[CART_PANEL] Current cart state:', cart);
-    console.log('[CART_PANEL] Credit info:', creditInfo);
-
     if (!cart || cart.items.length === 0) {
-      console.error('[CART_PANEL] Cannot checkout - cart is empty');
       alert('Cannot checkout with an empty cart');
       return;
     }
 
     setIsCreditCheckoutLoading(true);
     try {
-      console.log('[CART_PANEL] Calling checkoutWithCredits from context');
       await checkoutWithCredits();
-      console.log('[CART_PANEL] Credit checkout successful');
       // The checkoutWithCredits function now handles redirecting to success page
     } catch (error: unknown) {
-      console.error("[CART_PANEL] Credit checkout failed - Full error:", error);
+      console.error("Credit checkout failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error("[CART_PANEL] Error message:", errorMessage);
-      console.error("[CART_PANEL] Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       alert(`Credit checkout failed: ${errorMessage}`);
     } finally {
-      console.log('[CART_PANEL] Credit checkout process completed, setting loading to false');
       setIsCreditCheckoutLoading(false);
     }
   };
 
-  const handleCheckCredits = async () => {
-    console.log('[CART_PANEL] Starting credit check process');
+  const handleCheckCredits = useCallback(async () => {
     if (!cart || cart.items.length === 0) {
-      console.log('[CART_PANEL] Cart is empty, clearing credit info');
       setCreditInfo(null);
       return;
-    };
-    console.log('[CART_PANEL] Cart has items, checking credits');
+    }
+
+    // Prevent multiple simultaneous credit checks
+    if (isCheckingCreditsRef.current) {
+      return;
+    }
+
+    isCheckingCreditsRef.current = true;
     setIsCheckingCredits(true);
     try {
-      console.log('[CART_PANEL] Calling checkCredits from context');
       const info = await checkCredits();
-      console.log('[CART_PANEL] Credit check result:', info);
       setCreditInfo(info);
     } catch (error: unknown) {
-      console.error("[CART_PANEL] Failed to check credits:", error);
+      console.error("Failed to check credits:", error);
       // Silently fail or show a non-blocking error
     } finally {
-      console.log('[CART_PANEL] Credit check process completed, setting loading to false');
       setIsCheckingCredits(false);
+      isCheckingCreditsRef.current = false;
     }
-  };
+  }, [cart]);
 
   // Check credits whenever the cart contents change
   useEffect(() => {
-    console.log('[CART_PANEL] Cart changed, scheduling credit check with debounce');
     const timer = setTimeout(() => {
-      console.log('[CART_PANEL] Debounced credit check triggered');
       handleCheckCredits();
     }, 300); // Debounce to avoid rapid firing
     return () => {
-      console.log('[CART_PANEL] Cleaning up credit check timer');
       clearTimeout(timer);
     };
-  }, [cart, handleCheckCredits]);
+  }, [handleCheckCredits]);
 
 
   if (isLoading && !cart) {

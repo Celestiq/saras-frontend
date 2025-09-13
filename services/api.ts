@@ -27,7 +27,6 @@ async function apiFetch(endpoint: string, options: RequestInit = {}, authenticat
     };
 
     const response = await fetch(`${API_PREFIX}${endpoint}`, config);
-    console.log(`API Fetch to ${endpoint} with options: ${JSON.stringify(config)}\nResponse: `, response);
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `An unknown server error occurred for endpoint ${endpoint}.` }));
@@ -96,8 +95,6 @@ export const checkoutCart = (timeToSend: string) => apiFetch('/cart/checkout', {
 
 /** Processes checkout using credits. */
 export const checkoutWithCredits = (timeToSend: string) => {
-    console.log(`[API] Starting credit checkout with time_to_send: ${timeToSend}`);
-    console.log(`[API] Request body:`, JSON.stringify({ time_to_send: timeToSend }));
     return apiFetch('/cart/checkout/credits', {
         method: 'POST',
         body: JSON.stringify({ time_to_send: timeToSend }),
@@ -106,7 +103,6 @@ export const checkoutWithCredits = (timeToSend: string) => {
 
 /** Checks if user has sufficient credits for checkout. */
 export const checkCredits = () => {
-    console.log('[API] Checking user credits for checkout');
     return apiFetch('/cart/check-credits', {
         method: 'GET',
     });

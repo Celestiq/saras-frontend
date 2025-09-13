@@ -60,17 +60,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp > currentTime;
     } catch (error) {
-      console.log('CartContext: Invalid token format');
       return false;
     }
   }, []);
 
   const fetchCart = useCallback(async () => {
     const token = localStorage.getItem('authToken');
-    console.log('CartContext: Token check -', token ? 'Token exists' : 'No token');
 
     if (!token) {
-      console.log('CartContext: No token, setting cart to null and stopping');
       setCart(null);
       setIsLoading(false);
       setError(null);
@@ -79,7 +76,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Validate token before making API call
     if (!isTokenValid(token)) {
-      console.log('CartContext: Token is invalid/expired, clearing it');
       localStorage.removeItem('authToken');
       setCart(null);
       setIsLoading(false);
@@ -87,15 +83,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('CartContext: Token is valid, attempting to fetch cart...');
     try {
       setError(null);
       setIsLoading(true);
       const cartData = await getCart();
-      console.log("CartContext: Successfully fetched cart data:", cartData);
       setCart(cartData);
     } catch (err: any) {
-      console.error("CartContext: Failed to fetch cart:", err);
+      console.error("Failed to fetch cart:", err);
 
       // Check for various authentication error patterns
       const isAuthError = err.message.includes('Authentication token not found') ||
@@ -107,7 +101,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         err.status === 401;
 
       if (isAuthError) {
-        console.log('CartContext: Authentication error detected, clearing invalid token and cart');
         setCart(null);
         localStorage.removeItem('authToken'); // Clear invalid token
         setError(null); // Clear error since we've handled it
@@ -135,7 +128,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     try {
       const updatedCart = await apiAddItemToCart(bookId, true); // Default to subscription
-      console.log("Cart after adding item:", updatedCart);
       setCart(updatedCart);
     } catch (err: any) {
       console.error("Failed to add item:", err);
@@ -193,12 +185,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const checkoutWithCredits = async () => {
-    console.log('[CART_CONTEXT] Starting credit checkout process');
     try {
       // In a real app, you'd get this from a time picker.
-      console.log('[CART_CONTEXT] Calling API for credit checkout');
       const result = await apiCheckoutWithCredits("07:00:00");
-      console.log('[CART_CONTEXT] Credit checkout successful, result:', result);
 
       // Store order ID in session storage for success page
       if (result.order && result.order.id) {
@@ -211,23 +200,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Redirect to success page instead of showing alert
       window.location.href = '/payment/success';
     } catch (err: any) {
-      console.error("[CART_CONTEXT] Credit checkout failed - Full error object:", err);
-      console.error("[CART_CONTEXT] Error message:", err.message);
-      console.error("[CART_CONTEXT] Error status:", err.status);
-      console.error("[CART_CONTEXT] Error response:", err.response);
+      console.error("Credit checkout failed:", err);
       setError(err.message || 'Unknown error occurred');
       alert(`Credit checkout failed: ${err.message || 'Unknown error occurred'}`);
     }
   };
 
   const checkCredits = async () => {
-    console.log('[CART_CONTEXT] Checking user credits');
     try {
       const creditInfo = await apiCheckCredits();
-      console.log('[CART_CONTEXT] Credit check result:', creditInfo);
       return creditInfo;
     } catch (err: any) {
-      console.error("[CART_CONTEXT] Failed to check credits:", err);
+      console.error("Failed to check credits:", err);
       setError(err.message);
       throw err;
     }
