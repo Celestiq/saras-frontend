@@ -121,7 +121,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Optimistic UI update
     const previousCart = cart;
     const newBook = { generated_title: title };
-    const newItem: CartItem = { book_id: bookId, book: newBook, subscription: true, unit_price: 1.00 };
+    const newItem: CartItem = { book_id: bookId, book: newBook, subscription: true, unit_price: 2.00 };
     if (cart) {
       setCart({ ...cart, items: [...cart.items, newItem] });
     }
