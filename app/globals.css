@@ -4,6 +4,36 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@font-face {
+  font-family: "MerriweatherCustom";
+  src: url("/fonts/Merriweather-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "MerriweatherCustom";
+  src: url("/fonts/Merriweather-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* same for Playfair */
+@font-face {
+  font-family: "PlayfairCustom";
+  src: url("/fonts/PlayfairDisplay-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* then use */
+/* :root {
+  --font-merriweather: "MerriweatherCustom", serif;
+  --font-playfair-display: "PlayfairCustom", serif;
+} */
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -38,7 +68,6 @@
 
 /* --- Lively Antique Light Theme --- */
 :root {
-  /* --- FONT FIX: Defining the font variables --- */
   --font-merriweather: 'Merriweather', serif;
   --font-playfair-display: 'Playfair Display', serif;
 

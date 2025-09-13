@@ -3786,6 +3786,30 @@
   initial-value: 0;
 }
 
+@font-face {
+  font-family: MerriweatherCustom;
+  src: url("/fonts/Merriweather-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: MerriweatherCustom;
+  src: url("/fonts/Merriweather-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: PlayfairCustom;
+  src: url("/fonts/PlayfairDisplay-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --font-merriweather: "Merriweather", serif;
   --font-playfair-display: "Playfair Display", serif;
