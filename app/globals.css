@@ -5,24 +5,24 @@
 @import "tw-animate-css";
 
 @font-face {
-  font-family: "MerriweatherCustom";
-  src: url("/fonts/Merriweather-400.woff2") format("woff2");
+  font-family: 'Merriweather';
+  src: url('/fonts/Merriweather-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
-  font-family: "MerriweatherCustom";
-  src: url("/fonts/Merriweather-700.woff2") format("woff2");
+  font-family: 'Merriweather';
+  src: url('/fonts/Merriweather-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
-/* same for Playfair */
 @font-face {
-  font-family: "PlayfairCustom";
-  src: url("/fonts/PlayfairDisplay-700.woff2") format("woff2");
+  font-family: 'Playfair Display';
+  src: url('/fonts/PlayfairDisplay-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
