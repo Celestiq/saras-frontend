@@ -10,6 +10,7 @@ import {
 import { useCart } from '@/context/CartContext';
 import { createWish, getUserProfile, refineWish } from '@/services/api';
 import type { CartItem } from '@/context/CartContext';
+import { PaymentMethodModal } from '@/components/payment/PaymentMethodModal';
 
 // --- UI Components from shadcn/ui ---
 import { Button } from '@/components/ui/button';
@@ -267,10 +268,11 @@ function SkeletonPlan() {
 }
 
 function CartPanel() {
-  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkCredits, isLoading } = useCart();
+  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading } = useCart();
   const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
   const [isCheckingCredits, setIsCheckingCredits] = useState(false);
   const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const isCheckingCreditsRef = useRef(false);
 
   const handlePayPalCheckout = async () => {
@@ -301,6 +303,21 @@ function CartPanel() {
     } finally {
       setIsCreditCheckoutLoading(false);
     }
+  };
+
+  const handleCashfreeCheckout = async () => {
+    try {
+      await checkoutWithCashfree();
+      // The checkoutWithCashfree function handles redirecting to success page
+    } catch (error: unknown) {
+      console.error("Cashfree checkout failed:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Cashfree checkout failed: ${errorMessage}`);
+    }
+  };
+
+  const handleProceedToCheckout = () => {
+    setIsPaymentModalOpen(true);
   };
 
   const handleCheckCredits = useCallback(async () => {
@@ -434,13 +451,13 @@ function CartPanel() {
               </AnimatePresence>
             </div>
 
-            {/* Right side container for PayPal button */}
+            {/* Right side container for Checkout button */}
             <div className="w-1/2">
               <Button
                 size="lg"
                 className="w-full h-12 text-base"
                 disabled={!cart || cart.items.length === 0}
-                onClick={handlePayPalCheckout}
+                onClick={handleProceedToCheckout}
               >
                 <CreditCard className="w-5 h-5 mr-2" />
                 Proceed to Checkout
@@ -449,6 +466,18 @@ function CartPanel() {
           </div>
         </div>
       </CardFooter>
+
+      {/* Payment Method Modal */}
+      <PaymentMethodModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onPayPalCheckout={handlePayPalCheckout}
+        onCashfreeCheckout={handleCashfreeCheckout}
+        onCreditCheckout={handleCreditCheckout}
+        creditInfo={creditInfo}
+        isCreditCheckoutLoading={isCreditCheckoutLoading}
+        cartTotal={cart?.total || 0}
+      />
     </Card>
   );
 }

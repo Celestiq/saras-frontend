@@ -10,6 +10,7 @@ import {
   checkCredits as apiCheckCredits,
   createPayPalPayment
 } from '@/services/api';
+import { cashfreePaymentService, CashfreeVerificationResult } from '@/services/cashfree';
 
 // --- TYPE DEFINITIONS (Matching Backend) ---
 export interface Book {
@@ -40,6 +41,7 @@ export interface CartContextType {
   checkout: () => Promise<void>;
   checkoutWithCredits: () => Promise<void>;
   checkoutWithPayPal: () => Promise<string>;
+  checkoutWithCashfree: () => Promise<CashfreeVerificationResult>;
   checkCredits: () => Promise<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean }>;
   isItemInCart: (bookId: string) => boolean;
   getCartCount: () => number;
@@ -246,6 +248,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const checkoutWithCashfree = async (): Promise<CashfreeVerificationResult> => {
+    try {
+      const result = await cashfreePaymentService.processPayment();
+
+      if (result.status === 'success') {
+        // Store payment details in session storage for success page
+        sessionStorage.setItem('cashfree_payment_type', 'order');
+        if (result.order?.id) {
+          sessionStorage.setItem('cashfree_order_id', result.order.id);
+        }
+
+        // After successful payment, refetch cart
+        fetchCart();
+
+        // Redirect to success page
+        window.location.href = '/payment/success?gateway=cashfree';
+      }
+
+      return result;
+    } catch (err: any) {
+      console.error("Cashfree checkout failed:", err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
   // --- Derived State & Helpers ---
   const isItemInCart = (bookId: string) => {
     return cart?.items.some(item => item.book_id === bookId) ?? false;
@@ -263,6 +291,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     checkout,
     checkoutWithCredits,
     checkoutWithPayPal,
+    checkoutWithCashfree,
     checkCredits,
     isItemInCart,
     getCartCount,

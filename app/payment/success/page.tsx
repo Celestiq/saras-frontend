@@ -44,12 +44,15 @@ function PaymentProcessor() {
             const subscriptionId = sessionStorage.getItem('paypal_subscription_id');
             const orderId = searchParams.get('token') || searchParams.get('order_id'); // Support both PayPal token and direct order_id
             const creditsOrderId = sessionStorage.getItem('credits_order_id');
+            const cashfreeOrderId = sessionStorage.getItem('cashfree_order_id');
             const isCreditPurchase = searchParams.get('type') === 'credits';
+            const isCashfreePayment = searchParams.get('gateway') === 'cashfree';
 
             // Clear session storage items after reading them
             sessionStorage.removeItem('paypal_payment_type');
             sessionStorage.removeItem('paypal_subscription_id');
             sessionStorage.removeItem('credits_order_id');
+            sessionStorage.removeItem('cashfree_order_id');
 
             let finalOrderId = orderId || creditsOrderId;
 
@@ -103,6 +106,11 @@ function PaymentProcessor() {
                     setMessage(`Payment capture failed: ${errorMessage}`);
                     return;
                 }
+            } else if (isCashfreePayment && cashfreeOrderId) {
+                // Cashfree payment - already verified during checkout
+                setStatus('success');
+                setMessage('Payment with Cashfree successful! Your content generation will begin shortly.');
+                finalOrderId = cashfreeOrderId;
             } else if (creditsOrderId) {
                 // Credits checkout - no payment processing needed
                 setStatus('success');
