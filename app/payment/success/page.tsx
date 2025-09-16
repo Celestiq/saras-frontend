@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { verifyPayPalSubscription, capturePayPalOrder, getOrderById, captureCreditPurchase } from '@/services/api';
+import { verifyPayPalSubscription, capturePayPalOrder, getOrderById, captureCreditPurchase, verifyCashfreeCreditPurchase } from '@/services/api';
 import { Loader2, CheckCircle, AlertTriangle, Clock, Package, CreditCard, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,16 @@ function PaymentProcessor() {
             const cashfreeOrderId = sessionStorage.getItem('cashfree_order_id');
             const isCreditPurchase = searchParams.get('type') === 'credits';
             const isCashfreePayment = searchParams.get('gateway') === 'cashfree';
+            const isCashfreeCredits = isCreditPurchase && isCashfreePayment;
+
+            console.log('Payment verification debug:', {
+                creditsOrderId,
+                cashfreeOrderId,
+                isCreditPurchase,
+                isCashfreePayment,
+                isCashfreeCredits,
+                orderId: searchParams.get('token') || searchParams.get('order_id')
+            });
 
             // Clear session storage items after reading them
             sessionStorage.removeItem('paypal_payment_type');
@@ -56,8 +66,24 @@ function PaymentProcessor() {
 
             let finalOrderId = orderId || creditsOrderId;
 
-            if (isCreditPurchase && orderId) {
-                // Handle credit purchase
+            if (isCashfreeCredits && creditsOrderId) {
+                // Handle Cashfree credit purchase
+                try {
+                    setMessage('Verifying your Cashfree credit purchase...');
+                    const verificationResponse = await verifyCashfreeCreditPurchase(creditsOrderId);
+                    setStatus('success');
+                    setMessage(`Payment successful! ${verificationResponse.credits_added || 'Credits'} have been added to your account.`);
+
+                    // For credit purchases, we don't need to fetch order details
+                    return;
+                } catch (error: unknown) {
+                    setStatus('error');
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                    setMessage(`Cashfree credit purchase verification failed: ${errorMessage}`);
+                    return;
+                }
+            } else if (isCreditPurchase && orderId) {
+                // Handle PayPal credit purchase
                 try {
                     setMessage('Finalizing your credit purchase...');
                     const captureResponse = await captureCreditPurchase(orderId);

@@ -3,11 +3,13 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Zap, Download, CreditCard, Loader2 } from 'lucide-react';
+import { ArrowLeft, Zap, Download, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { purchaseCredits } from '@/services/api';
+import { cashfreeCreditsPaymentService } from '@/services/cashfree-credits';
+import { CreditsPaymentModal } from '@/components/payment/CreditsPaymentModal';
 
 interface CreditPackage {
     id: string;
@@ -47,13 +49,15 @@ export default function CreditsPage() {
     const [selectedPackage, setSelectedPackage] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isCashfreeLoading, setIsCashfreeLoading] = useState(false);
 
     const handleSelectPackage = (packageId: string) => {
         setSelectedPackage(packageId);
         setError(null); // Clear any previous errors
     };
 
-    const handleProceedToCheckout = async () => {
+    const handleProceedToCheckout = () => {
         if (!selectedPackage) {
             setError('Please select a package to continue');
             return;
@@ -65,11 +69,21 @@ export default function CreditsPage() {
             return;
         }
 
+        setError(null);
+        setIsPaymentModalOpen(true);
+    };
+
+    const handlePayPalCheckout = async () => {
+        if (!selectedPackage) return;
+
+        const packageData = creditPackages.find(pkg => pkg.id === selectedPackage);
+        if (!packageData) return;
+
         setIsLoading(true);
         setError(null);
 
         try {
-            console.log('Initiating credit purchase:', {
+            console.log('Initiating PayPal credit purchase:', {
                 packageId: selectedPackage,
                 credits: packageData.credits,
                 price: packageData.price
@@ -81,7 +95,7 @@ export default function CreditsPage() {
                 packageData.price
             );
 
-            console.log('Credit purchase response:', response);
+            console.log('PayPal credit purchase response:', response);
 
             if (response.approval_url) {
                 // Redirect to PayPal for payment
@@ -91,10 +105,57 @@ export default function CreditsPage() {
                 throw new Error('No approval URL received from server');
             }
         } catch (err) {
-            console.error('Credit purchase failed:', err);
+            console.error('PayPal credit purchase failed:', err);
             setError(err instanceof Error ? err.message : 'Failed to initiate credit purchase. Please try again.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleCashfreeCheckout = async () => {
+        if (!selectedPackage) return;
+
+        const packageData = creditPackages.find(pkg => pkg.id === selectedPackage);
+        if (!packageData) return;
+
+        setIsCashfreeLoading(true);
+        setError(null);
+
+        try {
+            console.log('Initiating Cashfree credit purchase:', {
+                packageId: selectedPackage,
+                credits: packageData.credits,
+                price: packageData.price
+            });
+
+            const result = await cashfreeCreditsPaymentService.processCreditsPayment(
+                selectedPackage,
+                packageData.credits,
+                packageData.price
+            );
+
+            console.log('Cashfree credit purchase result:', result);
+
+            if (result.status === 'success') {
+                // Store payment details in session storage for success page
+                sessionStorage.setItem('credits_payment_type', 'cashfree');
+                if (result.order?.id) {
+                    sessionStorage.setItem('credits_order_id', result.order.id);
+                    console.log('Stored credits order ID:', result.order.id);
+                } else {
+                    console.warn('No order ID in result:', result);
+                }
+
+                // Redirect to success page
+                window.location.href = '/payment/success?gateway=cashfree&type=credits';
+            } else {
+                throw new Error(result.message || 'Payment failed');
+            }
+        } catch (err) {
+            console.error('Cashfree credit purchase failed:', err);
+            setError(err instanceof Error ? err.message : 'Failed to process payment. Please try again.');
+        } finally {
+            setIsCashfreeLoading(false);
         }
     };
 
@@ -215,10 +276,10 @@ export default function CreditsPage() {
                         <Button
                             size="lg"
                             className="px-8 py-3 text-lg"
-                            disabled={!selectedPackage || isLoading}
+                            disabled={!selectedPackage || isLoading || isCashfreeLoading}
                             onClick={handleProceedToCheckout}
                         >
-                            {isLoading ? (
+                            {(isLoading || isCashfreeLoading) ? (
                                 <>
                                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                     Processing...
@@ -242,6 +303,16 @@ export default function CreditsPage() {
                         )}
                     </motion.div>
                 </div>
+
+                {/* Payment Method Modal */}
+                <CreditsPaymentModal
+                    isOpen={isPaymentModalOpen}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    onPayPalCheckout={handlePayPalCheckout}
+                    onCashfreeCheckout={handleCashfreeCheckout}
+                    selectedPackage={selectedPackage ? creditPackages.find(pkg => pkg.id === selectedPackage) || null : null}
+                    isLoading={isLoading || isCashfreeLoading}
+                />
             </div>
         </div>
     );

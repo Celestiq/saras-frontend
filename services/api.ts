@@ -153,3 +153,16 @@ export const captureCreditPurchase = (orderId: string) => apiFetch(`/credits/cap
 export const getCreditBalance = () => apiFetch('/credits/balance', {
     method: 'GET',
 });
+
+// --- Cashfree Credits Purchase API ---
+
+/** Purchase credits using Cashfree */
+export const purchaseCreditsWithCashfree = (packageId: string, credits: number, price: number) => apiFetch('/credits/purchase-cashfree', {
+    method: 'POST',
+    body: JSON.stringify({ package_id: packageId, credits, price }),
+});
+
+/** Verify Cashfree credit purchase payment */
+export const verifyCashfreeCreditPurchase = (orderId: string) => apiFetch(`/credits/verify-cashfree-purchase/${orderId}`, {
+    method: 'POST',
+});
