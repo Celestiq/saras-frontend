@@ -1,7 +1,7 @@
 import { load } from "@cashfreepayments/cashfree-js";
 
-const API_PREFIX = "http://0.0.0.0:8080";
-// const API_PREFIX = "https://api.mysaras.club";
+// const API_PREFIX = "https://0.0.0.0:8080";
+const API_PREFIX = "https://api.mysaras.club";
 
 export interface CashfreeCreditsPaymentSession {
     payment_type: string;
