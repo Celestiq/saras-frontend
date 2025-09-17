@@ -10,12 +10,8 @@ interface PaymentMethodModalProps {
     onPayPalCheckout: () => void;
     onCashfreeCheckout: () => void;
     onCreditCheckout: () => void;
-    creditInfo: {
-        cart_total: number;
-        user_credits: number;
-        sufficient_credits: boolean;
-        has_profile: boolean;
-    } | null;
+    userCredits: number;
+    sufficientCredits: boolean;
     isCreditCheckoutLoading: boolean;
     cartTotal: number;
 }
@@ -26,7 +22,8 @@ export function PaymentMethodModal({
     onPayPalCheckout,
     onCashfreeCheckout,
     onCreditCheckout,
-    creditInfo,
+    userCredits,
+    sufficientCredits,
     isCreditCheckoutLoading,
     cartTotal
 }: PaymentMethodModalProps) {
@@ -145,7 +142,7 @@ export function PaymentMethodModal({
                                     </div>
 
                                     {/* Credits Option */}
-                                    {creditInfo?.sufficient_credits && (
+                                    {sufficientCredits && (
                                         <div
                                             className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedMethod === 'credits'
                                                     ? 'border-green-500 bg-green-50 dark:bg-green-950'
@@ -166,7 +163,7 @@ export function PaymentMethodModal({
                                                 <div className="flex-1">
                                                     <div className="font-medium">Pay with Credits</div>
                                                     <div className="text-sm text-muted-foreground">
-                                                        Use {creditInfo.user_credits} available credits
+                                                        Use {userCredits} available credits
                                                     </div>
                                                 </div>
                                             </div>

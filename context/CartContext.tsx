@@ -11,6 +11,7 @@ import {
   createPayPalPayment
 } from '@/services/api';
 import { cashfreePaymentService, CashfreeVerificationResult } from '@/services/cashfree';
+import { PRICE_ONE_TIME, PRICE_SUBSCRIPTION } from '../constants';
 
 // --- TYPE DEFINITIONS (Matching Backend) ---
 export interface Book {
@@ -39,12 +40,13 @@ export interface CartContextType {
   removeItemFromCart: (bookId: string) => Promise<void>;
   updateItemSubscription: (bookId: string, subscription: boolean) => Promise<void>;
   checkout: () => Promise<void>;
-  checkoutWithCredits: () => Promise<void>;
+  checkoutWithCredits: () => Promise<CartState>;
   checkoutWithPayPal: () => Promise<string>;
   checkoutWithCashfree: () => Promise<CashfreeVerificationResult>;
   checkCredits: () => Promise<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean }>;
   isItemInCart: (bookId: string) => boolean;
   getCartCount: () => number;
+  setCart: React.Dispatch<React.SetStateAction<CartState | null>>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -154,22 +156,63 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateItemSubscription = async (bookId: string, subscription: boolean) => {
-    const previousCart = cart;
-    // Optimistic update for immediate UI feedback
-    if (cart) {
-      const newItems = cart.items.map(item => item.book_id === bookId ? { ...item, subscription } : item);
-      setCart({ ...cart, items: newItems });
-    }
+  // const updateItemSubscription = async (bookId: string, subscription: boolean) => {
+  //   const previousCart = cart;
+  //   // Optimistic update for immediate UI feedback
+  //   if (cart) {
+  //     const newItems = cart.items.map(item => item.book_id === bookId ? { ...item, subscription } : item);
+  //     setCart({ ...cart, items: newItems });
+  //   }
 
-    try {
-      const updatedCart = await apiUpdateCartItem(bookId, subscription);
-      setCart(updatedCart);
-    } catch (err: any) {
-      console.error("Failed to update item:", err);
-      setError(err.message);
-      setCart(previousCart); // Revert
-    }
+  //   try {
+  //     const updatedCart = await apiUpdateCartItem(bookId, subscription);
+  //     setCart(updatedCart);
+  //   } catch (err: any) {
+  //     console.error("Failed to update item:", err);
+  //     setError(err.message);
+  //     setCart(previousCart); // Revert
+  //   }
+  // };
+
+  const updateItemSubscription = async (bookId: string, subscription: boolean) => {
+      const previousCart = cart;
+      if (!cart) return;
+
+      // --- Start of Optimistic Update ---
+      // 1. Calculate the new price and items list immediately
+      const newItems = cart.items.map(item => {
+          if (item.book_id === bookId) {
+              return {
+                  ...item,
+                  subscription: subscription,
+                  unit_price: subscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME,
+              };
+          }
+          return item;
+      });
+
+      // 2. Recalculate the total based on the new items list
+      const newTotal = newItems.reduce((acc, item) => acc + item.unit_price, 0);
+
+      // 3. Set the new, complete state on the frontend instantly
+      setCart({
+          ...cart,
+          items: newItems,
+          total: newTotal,
+      });
+      // --- End of Optimistic Update ---
+
+      try {
+          // 4. Send the update to the backend in the background
+          const updatedCartFromServer = await apiUpdateCartItem(bookId, subscription);
+          // 5. Sync the final state with the server's response to ensure consistency
+          setCart(updatedCartFromServer);
+      } catch (err: any) {
+          console.error("Failed to update item:", err);
+          setError(err.message);
+          // 6. If the API call fails, revert to the previous state
+          setCart(previousCart);
+      }
   };
 
   const checkout = async () => {
@@ -186,7 +229,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const checkoutWithCredits = async () => {
+  const checkoutWithCredits = async (): Promise<CartState> => {
+    const previousCart = cart;
+    if (!cart) {
+        throw new Error("Cannot checkout with an empty cart.");
+    }
+
+    setCart({
+        ...cart,
+        items: [],
+        total: 0,
+    });
+
     try {
       // In a real app, you'd get this from a time picker.
       const result = await apiCheckoutWithCredits("07:00:00");
@@ -199,12 +253,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // After checkout, the cart is no longer a 'draft', so we refetch.
       fetchCart();
 
-      // Redirect to success page instead of showing alert
-      window.location.href = '/payment/success';
+      if (!result.order) {
+          throw new Error("Checkout succeeded but no order data was returned.");
+      }
+      return result.order;
+      // window.location.href = '/payment/success';
+
     } catch (err: any) {
       console.error("Credit checkout failed:", err);
-      setError(err.message || 'Unknown error occurred');
-      alert(`Credit checkout failed: ${err.message || 'Unknown error occurred'}`);
+      setCart(previousCart);
+      // setError(err.message || 'Unknown error occurred');
+      // alert(`Credit checkout failed: ${err.message || 'Unknown error occurred'}`);
+      throw err;
     }
   };
 
@@ -295,6 +355,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     checkCredits,
     isItemInCart,
     getCartCount,
+    setCart
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

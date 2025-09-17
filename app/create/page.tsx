@@ -30,6 +30,7 @@ interface Module { module_title: string; topics: Topic[]; }
 interface Plan { plan_id: string; modules: Module[]; subject: string; book_id: string; }
 
 const TYPEWRITER_HINTS = ["explain AI for product managers", "teach me SQL from scratch", "make Indian philosophy easy"];
+const MotionButton = motion(Button);
 
 // --- Sub-Components ---
 
@@ -268,12 +269,34 @@ function SkeletonPlan() {
 }
 
 function CartPanel() {
-  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading } = useCart();
-  const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
-  const [isCheckingCredits, setIsCheckingCredits] = useState(false);
+  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading, setCart } = useCart();
+  // const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
+  // const [isCheckingCredits, setIsCheckingCredits] = useState(false);
+  // const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
+  // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  // const isCheckingCreditsRef = useRef(false);
+
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(true); // For the initial load
+
   const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const isCheckingCreditsRef = useRef(false);
+
+  useEffect(() => {
+    async function fetchUserCredits() {
+        setIsLoadingCredits(true);
+        try {
+            // The checkCredits API call now only runs once
+            const info = await checkCredits();
+            setUserCredits(info.user_credits || 0);
+        } catch (error) {
+            console.error("Failed to fetch user credits:", error);
+        } finally {
+            setIsLoadingCredits(false);
+        }
+    }
+    fetchUserCredits();
+  }, []);
 
   const handlePayPalCheckout = async () => {
     try {
@@ -293,15 +316,20 @@ function CartPanel() {
     }
 
     setIsCreditCheckoutLoading(true);
+
     try {
-      await checkoutWithCredits();
-      // The checkoutWithCredits function now handles redirecting to success page
+      const finalOrder = await checkoutWithCredits();
+
+      if (finalOrder && finalOrder.id) {
+          sessionStorage.setItem('credits_order_id', finalOrder.id);
+      }
+
+      window.location.href = '/payment/success';
     } catch (error: unknown) {
-      console.error("Credit checkout failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Credit checkout failed: ${errorMessage}`);
-    } finally {
       setIsCreditCheckoutLoading(false);
+
     }
   };
 
@@ -320,40 +348,40 @@ function CartPanel() {
     setIsPaymentModalOpen(true);
   };
 
-  const handleCheckCredits = useCallback(async () => {
-    if (!cart || cart.items.length === 0) {
-      setCreditInfo(null);
-      return;
-    }
+  // const handleCheckCredits = useCallback(async () => {
+  //   if (!cart || cart.items.length === 0) {
+  //     setCreditInfo(null);
+  //     return;
+  //   }
 
-    // Prevent multiple simultaneous credit checks
-    if (isCheckingCreditsRef.current) {
-      return;
-    }
+  //   // Prevent multiple simultaneous credit checks
+  //   if (isCheckingCreditsRef.current) {
+  //     return;
+  //   }
 
-    isCheckingCreditsRef.current = true;
-    setIsCheckingCredits(true);
-    try {
-      const info = await checkCredits();
-      setCreditInfo(info);
-    } catch (error: unknown) {
-      console.error("Failed to check credits:", error);
-      // Silently fail or show a non-blocking error
-    } finally {
-      setIsCheckingCredits(false);
-      isCheckingCreditsRef.current = false;
-    }
-  }, [cart]);
+  //   isCheckingCreditsRef.current = true;
+  //   setIsCheckingCredits(true);
+  //   try {
+  //     const info = await checkCredits();
+  //     setCreditInfo(info);
+  //   } catch (error: unknown) {
+  //     console.error("Failed to check credits:", error);
+  //     // Silently fail or show a non-blocking error
+  //   } finally {
+  //     setIsCheckingCredits(false);
+  //     isCheckingCreditsRef.current = false;
+  //   }
+  // }, [cart]);
 
-  // Check credits whenever the cart contents change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleCheckCredits();
-    }, 300); // Debounce to avoid rapid firing
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [handleCheckCredits]);
+  // // Check credits whenever the cart contents change
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     handleCheckCredits();
+  //   }, 300); // Debounce to avoid rapid firing
+  //   return () => {
+  //     clearTimeout(timer);
+  //   };
+  // }, [handleCheckCredits]);
 
 
   if (isLoading && !cart) {
@@ -368,6 +396,9 @@ function CartPanel() {
     animate: { rotateY: 0, opacity: 1, scale: 1 },
     exit: { rotateY: 90, opacity: 0, scale: 0.9 },
   };
+
+  const cartTotal = cart?.total ?? 0;
+  const sufficientCredits = userCredits >= cartTotal;
 
   return (
     <Card className="shadow-lg h-full flex flex-col bg-card">
@@ -404,7 +435,7 @@ function CartPanel() {
             {/* Left side container for credit button OR purchase text */}
             <div className="w-1/2">
               <AnimatePresence mode="wait" initial={false}>
-                {isCheckingCredits ? (
+                {isLoadingCredits ? (
                   <motion.div
                     key="loader"
                     {...flipVariants}
@@ -413,39 +444,62 @@ function CartPanel() {
                   >
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </motion.div>
-                ) : creditInfo?.sufficient_credits ? (
+                ) : sufficientCredits ? (
                   <motion.div
                     key="credit-button"
                     {...flipVariants}
                     transition={{ duration: 0.35, ease: "easeOut" }}
                   >
-                    <Button
+                    <MotionButton
                       size="lg"
                       className="w-full h-12 text-base bg-green-600 hover:bg-green-700 text-white"
                       disabled={!cart || cart.items.length === 0 || isCreditCheckoutLoading}
                       onClick={handleCreditCheckout}
+                      // --- ADD THESE PROPS FOR THE BREATHING EFFECT ---
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeInOut",
+                        repeat: Infinity,
+                      }}
+                      // --------------------------------------------------
                     >
                       {isCreditCheckoutLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
                       Pay with Credits
-                    </Button>
+                    </MotionButton>
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="purchase-text"
+                    key="purchase-button"
                     {...flipVariants}
                     transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="h-12 flex items-center justify-center text-center text-sm text-muted-foreground"
+                    className="h-12 flex items-center justify-center"
                   >
-                    <div>
-                      <span>Use credits for a cheaper price </span>
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto text-primary hover:text-primary/80"
-                        onClick={() => window.location.href = '/credits'}
-                      >
-                        Purchase Credits
-                      </Button>
-                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <MotionButton
+                            variant="outline"
+                            className="w-full h-12 text-base text-primary border-primary/50 hover:bg-primary/5 hover:text-primary/80"
+                            onClick={() => window.location.href = '/credits'}
+                            // The breathing animation is still here
+                            animate={{ 
+                              scale: [1, 1.05, 1]
+                            }}
+                            transition={{
+                              duration: 0.5,
+                              ease: "easeInOut",
+                              repeat: Infinity,
+                            }}
+                          >
+                            Purchase Credits
+                          </MotionButton>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Use credits for a cheaper price.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -474,7 +528,8 @@ function CartPanel() {
         onPayPalCheckout={handlePayPalCheckout}
         onCashfreeCheckout={handleCashfreeCheckout}
         onCreditCheckout={handleCreditCheckout}
-        creditInfo={creditInfo}
+        userCredits={userCredits}
+        sufficientCredits={sufficientCredits}
         isCreditCheckoutLoading={isCreditCheckoutLoading}
         cartTotal={cart?.total || 0}
       />
