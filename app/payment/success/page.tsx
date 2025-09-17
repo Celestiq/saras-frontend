@@ -41,8 +41,10 @@ function PaymentProcessor() {
     useEffect(() => {
         const processPayment = async () => {
             const paymentType = sessionStorage.getItem('paypal_payment_type');
+            // const paymentType = 'order'; // Hardcoded for testing
             const subscriptionId = sessionStorage.getItem('paypal_subscription_id');
-            const orderId = searchParams.get('token') || searchParams.get('order_id'); // Support both PayPal token and direct order_id
+            const orderId = searchParams.get('token') || searchParams.get('order_id');
+            // const orderId = "1234"; // Hardcoded for testing
             const creditsOrderId = sessionStorage.getItem('credits_order_id');
             const cashfreeOrderId = sessionStorage.getItem('cashfree_order_id');
             const isCreditPurchase = searchParams.get('type') === 'credits';
@@ -238,15 +240,6 @@ function PaymentProcessor() {
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-600">Order ID</span>
                             <span className="text-sm font-mono">{order.id}</span>
-                        </div>
-
-                        {/* Delivery Time */}
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-600">Delivery Time</span>
-                            <span className="text-sm flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                {formatTime(order.time_to_send)}
-                            </span>
                         </div>
 
                         {/* Payment Method */}
