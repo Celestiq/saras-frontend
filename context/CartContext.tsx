@@ -40,7 +40,6 @@ export interface CartItem {
   subscription: boolean;
   book: Book;
   unit_price: number;
-  plan?: Plan; // Store the full plan data for preview
 }
 
 export interface CartState {
@@ -55,7 +54,7 @@ export interface CartContextType {
   cart: CartState | null;
   isLoading: boolean;
   error: string | null;
-  addItemToCart: (bookId: string, title: string, plan?: Plan) => Promise<void>;
+  addItemToCart: (bookId: string, title: string) => Promise<void>;
   removeItemFromCart: (bookId: string) => Promise<void>;
   updateItemSubscription: (bookId: string, subscription: boolean) => Promise<void>;
   checkout: () => Promise<void>;
@@ -110,27 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       const cartData = await getCart();
-
-      // Merge with stored plan data from localStorage
-      const storedPlanData = localStorage.getItem('cartPlanData');
-      let planDataMap = {};
-      if (storedPlanData) {
-        try {
-          planDataMap = JSON.parse(storedPlanData);
-        } catch (e) {
-          console.error('Failed to parse stored plan data:', e);
-        }
-      }
-
-      const cartWithPlans = {
-        ...cartData,
-        items: cartData.items.map((item: CartItem) => ({
-          ...item,
-          plan: planDataMap[item.book_id] || null
-        }))
-      };
-
-      setCart(cartWithPlans);
+      setCart(cartData);
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
 
@@ -160,7 +139,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // --- Cart Actions ---
-  const addItemToCart = async (bookId: string, title: string, plan?: Plan) => {
+  const addItemToCart = async (bookId: string, title: string) => {
     // Optimistic UI update
     const previousCart = cart;
     const newBook = { generated_title: title };
@@ -168,24 +147,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       book_id: bookId,
       book: newBook,
       subscription: true,
-      unit_price: 2.00,
-      plan: plan // Store the plan data for preview
+      unit_price: 2.00
     };
-
-    // Store plan data in localStorage for persistence
-    if (plan) {
-      const storedPlanData = localStorage.getItem('cartPlanData');
-      let planDataMap = {};
-      if (storedPlanData) {
-        try {
-          planDataMap = JSON.parse(storedPlanData);
-        } catch (e) {
-          console.error('Failed to parse stored plan data:', e);
-        }
-      }
-      planDataMap[bookId] = plan;
-      localStorage.setItem('cartPlanData', JSON.stringify(planDataMap));
-    }
 
     // Create the optimistic cart update
     const optimisticCart = cart ? { ...cart, items: [...cart.items, newItem] } : null;
@@ -195,15 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     try {
       const updatedCart = await apiAddItemToCart(bookId, true); // Default to subscription
-      // Merge the plan data from our optimistic update into the server response
-      const updatedCartWithPlans = {
-        ...updatedCart,
-        items: updatedCart.items.map((item: CartItem) => {
-          const optimisticItem = optimisticCart?.items.find(ci => ci.book_id === item.book_id);
-          return optimisticItem ? { ...item, plan: optimisticItem.plan } : item;
-        })
-      };
-      setCart(updatedCartWithPlans);
+      setCart(updatedCart);
     } catch (err: any) {
       console.error("Failed to add item:", err);
       setError(err.message);
@@ -217,18 +172,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart({ ...cart, items: cart.items.filter(item => item.book_id !== bookId) });
     }
 
-    // Remove plan data from localStorage
-    const storedPlanData = localStorage.getItem('cartPlanData');
-    if (storedPlanData) {
-      try {
-        const planDataMap = JSON.parse(storedPlanData);
-        delete planDataMap[bookId];
-        localStorage.setItem('cartPlanData', JSON.stringify(planDataMap));
-      } catch (e) {
-        console.error('Failed to update stored plan data:', e);
-      }
-    }
-
     try {
       const updatedCart = await apiRemoveItemFromCart(bookId);
       setCart(updatedCart);
@@ -238,24 +181,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(previousCart); // Revert
     }
   };
-
-  // const updateItemSubscription = async (bookId: string, subscription: boolean) => {
-  //   const previousCart = cart;
-  //   // Optimistic update for immediate UI feedback
-  //   if (cart) {
-  //     const newItems = cart.items.map(item => item.book_id === bookId ? { ...item, subscription } : item);
-  //     setCart({ ...cart, items: newItems });
-  //   }
-
-  //   try {
-  //     const updatedCart = await apiUpdateCartItem(bookId, subscription);
-  //     setCart(updatedCart);
-  //   } catch (err: any) {
-  //     console.error("Failed to update item:", err);
-  //     setError(err.message);
-  //     setCart(previousCart); // Revert
-  //   }
-  // };
 
   const updateItemSubscription = async (bookId: string, subscription: boolean) => {
     const previousCart = cart;
