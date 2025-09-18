@@ -112,6 +112,29 @@ export const getOrderHistory = () => apiFetch('/orders');
 
 export const getOrderById = (orderId: string) => apiFetch(`/orders/${orderId}`);
 
+// --- Manage Orders API ---
+
+/** Fetches user subscriptions and order history for the manage-orders page */
+export const getManageOrders = () => apiFetch('/subscriptions');
+
+/** Pauses a subscription */
+export const pauseSubscription = (itemId: string) => apiFetch(`/subscriptions/pause`, {
+    method: 'POST',
+    body: JSON.stringify({ item_id: itemId }),
+});
+
+/** Resumes a paused subscription */
+export const resumeSubscription = (itemId: string) => apiFetch(`/subscriptions/resume`, {
+    method: 'POST',
+    body: JSON.stringify({ item_id: itemId }),
+});
+
+/** Cancels a subscription */
+export const cancelSubscription = (itemId: string) => apiFetch(`/subscriptions/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ item_id: itemId }),
+});
+
 // --- PayPal API ---
 
 /** Creates a PayPal payment session based on the current cart contents */

@@ -3,3 +3,4 @@ out
 .next
 **/.DS_Store
 .env
+docs/

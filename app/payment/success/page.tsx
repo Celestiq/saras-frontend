@@ -301,7 +301,7 @@ function PaymentProcessor() {
                     Back to Create
                 </Button>
                 <Button
-                    onClick={() => router.push('/order-history')}
+                    onClick={() => router.push('/manage-orders')}
                     variant="outline"
                     className="px-6 py-2"
                 >

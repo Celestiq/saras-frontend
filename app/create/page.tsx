@@ -105,9 +105,9 @@ function ProfileButton() {
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem> */}
-          <DropdownMenuItem onClick={() => window.location.href = '/order-history'}>
+          <DropdownMenuItem onClick={() => window.location.href = '/manage-orders'}>
             <BookCopy className="mr-2 h-4 w-4" />
-            <span>Order History</span>
+            <span>Manage Orders</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -284,16 +284,16 @@ function CartPanel() {
 
   useEffect(() => {
     async function fetchUserCredits() {
-        setIsLoadingCredits(true);
-        try {
-            // The checkCredits API call now only runs once
-            const info = await checkCredits();
-            setUserCredits(info.user_credits || 0);
-        } catch (error) {
-            console.error("Failed to fetch user credits:", error);
-        } finally {
-            setIsLoadingCredits(false);
-        }
+      setIsLoadingCredits(true);
+      try {
+        // The checkCredits API call now only runs once
+        const info = await checkCredits();
+        setUserCredits(info.user_credits || 0);
+      } catch (error) {
+        console.error("Failed to fetch user credits:", error);
+      } finally {
+        setIsLoadingCredits(false);
+      }
     }
     fetchUserCredits();
   }, []);
@@ -321,7 +321,7 @@ function CartPanel() {
       const finalOrder = await checkoutWithCredits();
 
       if (finalOrder && finalOrder.id) {
-          sessionStorage.setItem('credits_order_id', finalOrder.id);
+        sessionStorage.setItem('credits_order_id', finalOrder.id);
       }
 
       window.location.href = '/payment/success';
@@ -462,7 +462,7 @@ function CartPanel() {
                         ease: "easeInOut",
                         repeat: Infinity,
                       }}
-                      // --------------------------------------------------
+                    // --------------------------------------------------
                     >
                       {isCreditCheckoutLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
                       Pay with Credits
@@ -483,7 +483,7 @@ function CartPanel() {
                             className="w-full h-12 text-base text-primary border-primary/50 hover:bg-primary/5 hover:text-primary/80"
                             onClick={() => window.location.href = '/credits'}
                             // The breathing animation is still here
-                            animate={{ 
+                            animate={{
                               scale: [1, 1.05, 1]
                             }}
                             transition={{
