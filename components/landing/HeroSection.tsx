@@ -174,8 +174,6 @@ export default function HeroSection() {
           whileTap={{ scale: 0.98 }}
           className="mt-12" // Removed 'relative group'
         >
-          {/* REMOVED the complicated <span> pseudo-elements */}
-
           <Button
             onClick={handleJourneyClick}
             size="lg"

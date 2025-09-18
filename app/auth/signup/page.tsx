@@ -166,7 +166,7 @@ export default function SignUpPage() {
 
                 <GoogleButton
                     onClick={handleGoogleSignUp}
-                    disabled={isLoading}
+                    disabled={true}
                 >
                     Continue with Google
                 </GoogleButton>

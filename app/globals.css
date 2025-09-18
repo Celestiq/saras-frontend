@@ -72,8 +72,10 @@
   --font-playfair-display: 'Playfair Display', serif;
 
   /* --- NEW PALETTE --- */
-  --background: #fdf6e3; /* Warm Parchment */
-  --foreground: #3a3a3a; /* Softer Black Ink */
+  --background: #fdf6e3;
+  /* Warm Parchment */
+  --foreground: #3a3a3a;
+  /* Softer Black Ink */
 
   --card: #ffffff;
   --card-foreground: #3a3a3a;
@@ -81,25 +83,32 @@
   --popover: #ffffff;
   --popover-foreground: #3a3a3a;
 
-  --primary: #c59b6d; /* Gilded Gold / Ochre */
+  --primary: #c59b6d;
+  /* Gilded Gold / Ochre */
   --primary-foreground: #ffffff;
 
-  --secondary: #8c4b4b; /* Leather Burgundy */
+  --secondary: #8c4b4b;
+  /* Leather Burgundy */
   --secondary-foreground: #fdf6e3;
 
-  --muted: #e9e5de; /* Subtle variation of paper */
-  --muted-foreground: #6a6a6a; /* Lighter ink */
+  --muted: #e9e5de;
+  /* Subtle variation of paper */
+  --muted-foreground: #6a6a6a;
+  /* Lighter ink */
 
-  --accent: #f3eee5; /* Very light parchment for hover */
+  --accent: #f3eee5;
+  /* Very light parchment for hover */
   --accent-foreground: #c59b6d;
 
-  --destructive: #a25b5b; /* Muted, classic red */
-  --success: #5c7d4a; /* Muted, classic green */
+  --destructive: #a25b5b;
+  /* Muted, classic red */
+  --success: #5c7d4a;
+  /* Muted, classic green */
 
   --border: #d9d5ce;
   --input: #d9d5ce;
   --ring: #c59b6d;
-  
+
   --radius: 0.5rem;
 }
 
@@ -108,8 +117,10 @@
   --font-merriweather: 'Merriweather', serif;
   --font-playfair-display: 'Playfair Display', serif;
 
-  --background: #3a3a3a; /* Softer Black */
-  --foreground: #fdf6e3; /* Warm Parchment */
+  --background: #3a3a3a;
+  /* Softer Black */
+  --foreground: #fdf6e3;
+  /* Warm Parchment */
 
   --card: #4a4a4a;
   --card-foreground: #fdf6e3;
@@ -117,10 +128,12 @@
   --popover: #4a4a4a;
   --popover-foreground: #fdf6e3;
 
-  --primary: #d5ab8d; /* Lighter Gold */
+  --primary: #d5ab8d;
+  /* Lighter Gold */
   --primary-foreground: #3a3a3a;
 
-  --secondary: #ac6b6b; /* Lighter Burgundy */
+  --secondary: #ac6b6b;
+  /* Lighter Burgundy */
   --secondary-foreground: #3a3a3a;
 
   --muted: #5a5a5a;
@@ -141,6 +154,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -151,12 +165,15 @@
   0% {
     transform: translate(0px, 0px) scale(1);
   }
+
   33% {
     transform: translate(30px, -50px) scale(1.1);
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
+
   100% {
     transform: translate(0px, 0px) scale(1);
   }
@@ -175,9 +192,12 @@
 }
 
 @keyframes text-gradient {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -188,9 +208,12 @@
 }
 
 @keyframes pulse-light {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.7;
   }
+
   50% {
     opacity: 0.9;
   }

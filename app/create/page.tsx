@@ -11,6 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { createWish, getUserProfile, refineWish } from '@/services/api';
 import type { CartItem } from '@/context/CartContext';
 import { PaymentMethodModal } from '@/components/payment/PaymentMethodModal';
+import { QuoteDisplay } from '@/components/create/QuoteDisplay';
 
 // --- UI Components from shadcn/ui ---
 import { Button } from '@/components/ui/button';
@@ -348,42 +349,6 @@ function CartPanel() {
     setIsPaymentModalOpen(true);
   };
 
-  // const handleCheckCredits = useCallback(async () => {
-  //   if (!cart || cart.items.length === 0) {
-  //     setCreditInfo(null);
-  //     return;
-  //   }
-
-  //   // Prevent multiple simultaneous credit checks
-  //   if (isCheckingCreditsRef.current) {
-  //     return;
-  //   }
-
-  //   isCheckingCreditsRef.current = true;
-  //   setIsCheckingCredits(true);
-  //   try {
-  //     const info = await checkCredits();
-  //     setCreditInfo(info);
-  //   } catch (error: unknown) {
-  //     console.error("Failed to check credits:", error);
-  //     // Silently fail or show a non-blocking error
-  //   } finally {
-  //     setIsCheckingCredits(false);
-  //     isCheckingCreditsRef.current = false;
-  //   }
-  // }, [cart]);
-
-  // // Check credits whenever the cart contents change
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     handleCheckCredits();
-  //   }, 300); // Debounce to avoid rapid firing
-  //   return () => {
-  //     clearTimeout(timer);
-  //   };
-  // }, [handleCheckCredits]);
-
-
   if (isLoading && !cart) {
     return <Card className="shadow-lg h-full flex items-center justify-center bg-card">
       <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -639,7 +604,7 @@ export default function CreatePage() {
                 <p className="font-medium">Your plan will appear here.</p>
                 <p className="text-sm">Tell us what you want to learn to get started.</p>
               </Card>)}
-              {pageState === 'submitting' && (<motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full"><SkeletonPlan /></motion.div>)}
+              {pageState === 'submitting' && (<motion.div key="quotes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full"><QuoteDisplay /></motion.div>)}
               {pageState === 'error' && (<motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full">
                 <Card className="h-full flex flex-col items-center justify-center text-center bg-destructive/10 border-destructive/20 text-destructive"><AlertTriangle className="w-8 h-8 mb-2" />
                   <p className="font-bold">Something went wrong</p>

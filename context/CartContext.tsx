@@ -17,11 +17,30 @@ import { PRICE_ONE_TIME, PRICE_SUBSCRIPTION } from '../constants';
 export interface Book {
   generated_title: string;
 }
+
+export interface Topic {
+  title: string;
+  context: string;
+}
+
+export interface Module {
+  module_title: string;
+  topics: Topic[];
+}
+
+export interface Plan {
+  plan_id: string;
+  modules: Module[];
+  subject: string;
+  book_id: string;
+}
+
 export interface CartItem {
   book_id: string;
   subscription: boolean;
   book: Book;
   unit_price: number;
+  plan?: Plan; // Store the full plan data for preview
 }
 
 export interface CartState {
@@ -36,7 +55,7 @@ export interface CartContextType {
   cart: CartState | null;
   isLoading: boolean;
   error: string | null;
-  addItemToCart: (bookId: string, title: string) => Promise<void>;
+  addItemToCart: (bookId: string, title: string, plan?: Plan) => Promise<void>;
   removeItemFromCart: (bookId: string) => Promise<void>;
   updateItemSubscription: (bookId: string, subscription: boolean) => Promise<void>;
   checkout: () => Promise<void>;
@@ -91,7 +110,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       const cartData = await getCart();
-      setCart(cartData);
+
+      // Merge with stored plan data from localStorage
+      const storedPlanData = localStorage.getItem('cartPlanData');
+      let planDataMap = {};
+      if (storedPlanData) {
+        try {
+          planDataMap = JSON.parse(storedPlanData);
+        } catch (e) {
+          console.error('Failed to parse stored plan data:', e);
+        }
+      }
+
+      const cartWithPlans = {
+        ...cartData,
+        items: cartData.items.map((item: CartItem) => ({
+          ...item,
+          plan: planDataMap[item.book_id] || null
+        }))
+      };
+
+      setCart(cartWithPlans);
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
 
@@ -121,18 +160,50 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // --- Cart Actions ---
-  const addItemToCart = async (bookId: string, title: string) => {
+  const addItemToCart = async (bookId: string, title: string, plan?: Plan) => {
     // Optimistic UI update
     const previousCart = cart;
     const newBook = { generated_title: title };
-    const newItem: CartItem = { book_id: bookId, book: newBook, subscription: true, unit_price: 2.00 };
-    if (cart) {
-      setCart({ ...cart, items: [...cart.items, newItem] });
+    const newItem: CartItem = {
+      book_id: bookId,
+      book: newBook,
+      subscription: true,
+      unit_price: 2.00,
+      plan: plan // Store the plan data for preview
+    };
+
+    // Store plan data in localStorage for persistence
+    if (plan) {
+      const storedPlanData = localStorage.getItem('cartPlanData');
+      let planDataMap = {};
+      if (storedPlanData) {
+        try {
+          planDataMap = JSON.parse(storedPlanData);
+        } catch (e) {
+          console.error('Failed to parse stored plan data:', e);
+        }
+      }
+      planDataMap[bookId] = plan;
+      localStorage.setItem('cartPlanData', JSON.stringify(planDataMap));
+    }
+
+    // Create the optimistic cart update
+    const optimisticCart = cart ? { ...cart, items: [...cart.items, newItem] } : null;
+    if (optimisticCart) {
+      setCart(optimisticCart);
     }
 
     try {
       const updatedCart = await apiAddItemToCart(bookId, true); // Default to subscription
-      setCart(updatedCart);
+      // Merge the plan data from our optimistic update into the server response
+      const updatedCartWithPlans = {
+        ...updatedCart,
+        items: updatedCart.items.map((item: CartItem) => {
+          const optimisticItem = optimisticCart?.items.find(ci => ci.book_id === item.book_id);
+          return optimisticItem ? { ...item, plan: optimisticItem.plan } : item;
+        })
+      };
+      setCart(updatedCartWithPlans);
     } catch (err: any) {
       console.error("Failed to add item:", err);
       setError(err.message);
@@ -144,6 +215,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const previousCart = cart;
     if (cart) {
       setCart({ ...cart, items: cart.items.filter(item => item.book_id !== bookId) });
+    }
+
+    // Remove plan data from localStorage
+    const storedPlanData = localStorage.getItem('cartPlanData');
+    if (storedPlanData) {
+      try {
+        const planDataMap = JSON.parse(storedPlanData);
+        delete planDataMap[bookId];
+        localStorage.setItem('cartPlanData', JSON.stringify(planDataMap));
+      } catch (e) {
+        console.error('Failed to update stored plan data:', e);
+      }
     }
 
     try {
@@ -175,44 +258,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // };
 
   const updateItemSubscription = async (bookId: string, subscription: boolean) => {
-      const previousCart = cart;
-      if (!cart) return;
+    const previousCart = cart;
+    if (!cart) return;
 
-      // --- Start of Optimistic Update ---
-      // 1. Calculate the new price and items list immediately
-      const newItems = cart.items.map(item => {
-          if (item.book_id === bookId) {
-              return {
-                  ...item,
-                  subscription: subscription,
-                  unit_price: subscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME,
-              };
-          }
-          return item;
-      });
-
-      // 2. Recalculate the total based on the new items list
-      const newTotal = newItems.reduce((acc, item) => acc + item.unit_price, 0);
-
-      // 3. Set the new, complete state on the frontend instantly
-      setCart({
-          ...cart,
-          items: newItems,
-          total: newTotal,
-      });
-      // --- End of Optimistic Update ---
-
-      try {
-          // 4. Send the update to the backend in the background
-          const updatedCartFromServer = await apiUpdateCartItem(bookId, subscription);
-          // 5. Sync the final state with the server's response to ensure consistency
-          setCart(updatedCartFromServer);
-      } catch (err: any) {
-          console.error("Failed to update item:", err);
-          setError(err.message);
-          // 6. If the API call fails, revert to the previous state
-          setCart(previousCart);
+    // --- Start of Optimistic Update ---
+    // 1. Calculate the new price and items list immediately
+    const newItems = cart.items.map(item => {
+      if (item.book_id === bookId) {
+        return {
+          ...item,
+          subscription: subscription,
+          unit_price: subscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME,
+        };
       }
+      return item;
+    });
+
+    // 2. Recalculate the total based on the new items list
+    const newTotal = newItems.reduce((acc, item) => acc + item.unit_price, 0);
+
+    // 3. Set the new, complete state on the frontend instantly
+    setCart({
+      ...cart,
+      items: newItems,
+      total: newTotal,
+    });
+    // --- End of Optimistic Update ---
+
+    try {
+      // 4. Send the update to the backend in the background
+      const updatedCartFromServer = await apiUpdateCartItem(bookId, subscription);
+      // 5. Sync the final state with the server's response to ensure consistency
+      setCart(updatedCartFromServer);
+    } catch (err: any) {
+      console.error("Failed to update item:", err);
+      setError(err.message);
+      // 6. If the API call fails, revert to the previous state
+      setCart(previousCart);
+    }
   };
 
   const checkout = async () => {
@@ -232,13 +315,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const checkoutWithCredits = async (): Promise<CartState> => {
     const previousCart = cart;
     if (!cart) {
-        throw new Error("Cannot checkout with an empty cart.");
+      throw new Error("Cannot checkout with an empty cart.");
     }
 
     setCart({
-        ...cart,
-        items: [],
-        total: 0,
+      ...cart,
+      items: [],
+      total: 0,
     });
 
     try {
@@ -254,7 +337,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       fetchCart();
 
       if (!result.order) {
-          throw new Error("Checkout succeeded but no order data was returned.");
+        throw new Error("Checkout succeeded but no order data was returned.");
       }
       return result.order;
       // window.location.href = '/payment/success';
