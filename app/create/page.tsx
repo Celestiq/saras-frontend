@@ -1,7 +1,7 @@
 // frontend/app/create/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -269,7 +269,7 @@ function SkeletonPlan() {
 }
 
 function CartPanel() {
-  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading, setCart } = useCart();
+  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading } = useCart();
   // const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
   // const [isCheckingCredits, setIsCheckingCredits] = useState(false);
   // const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
@@ -296,7 +296,7 @@ function CartPanel() {
       }
     }
     fetchUserCredits();
-  }, []);
+  }, [checkCredits]);
 
   const handlePayPalCheckout = async () => {
     try {

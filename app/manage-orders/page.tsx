@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Feather, Loader2, AlertTriangle, BookCopy, Calendar, Tag, Clock, Hash, Pause, Play, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Feather, Loader2, AlertTriangle, BookCopy, Hash, Pause, Play, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -148,7 +147,7 @@ export default function ManageOrdersPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-sm text-muted-foreground">
-                                Are you sure you want to cancel <strong>"{cancelConfirm.title}"</strong>?
+                                Are you sure you want to cancel <strong>&ldquo;{cancelConfirm.title}&rdquo;</strong>?
                                 This action cannot be undone and you will stop receiving new chapters.
                             </p>
                             <div className="flex gap-2 justify-end">

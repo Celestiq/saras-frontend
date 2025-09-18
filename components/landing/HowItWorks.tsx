@@ -6,19 +6,19 @@ import Image from 'next/image';
 
 // --- TYPE DEFINITION ---
 // Defines the structure for each persona's data.
-interface PersonaData {
-  title: string;
-  name: string;
-  image: string; // e.g., "/assets/alex.png"
-  hook: string;
-  roadmap_description: string;
-  roadmap_modules: string[];
-  roadmap_image: string; // e.g., "/assets/roadmap-alex.png"
-  opted: {
-    option: 'newsletter' | 'ebook';
-    text: string;
-  };
-}
+// interface PersonaData {
+//   title: string;
+//   name: string;
+//   image: string; // e.g., "/assets/alex.png"
+//   hook: string;
+//   roadmap_description: string;
+//   roadmap_modules: string[];
+//   roadmap_image: string; // e.g., "/assets/roadmap-alex.png"
+//   opted: {
+//     option: 'newsletter' | 'ebook';
+//     text: string;
+//   };
+// }
 
 // --- MOCK DATA ---
 // This data should be moved to 'assets/how_it_works.json' and fetched.
