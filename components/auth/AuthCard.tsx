@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Feather } from 'lucide-react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AuthCardProps {
@@ -22,7 +22,13 @@ export function AuthCard({ title, subtitle, children }: AuthCardProps) {
                 <Card className="shadow-lg border-0 bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center pb-6">
                         <div className="flex items-center justify-center gap-2 mb-4">
-                            <Feather className="w-8 h-8 text-primary" />
+                            <Image
+                                src="/logo.png"
+                                alt="Saras Logo"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                            />
                             <span className="font-display text-2xl font-bold">Saras</span>
                         </div>
                         <CardTitle className="font-display text-2xl">{title}</CardTitle>

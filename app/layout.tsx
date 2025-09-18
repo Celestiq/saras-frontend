@@ -22,6 +22,11 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Saras - Learn anything in 28 days.",
   description: "Your personal AI-crafted book, delivered daily to your inbox.",
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

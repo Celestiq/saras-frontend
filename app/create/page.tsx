@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import {
-  ShoppingCart, Feather, Loader2, Wand2, AlertTriangle, X, CheckCircle, Plus, Edit, Info, BookCopy, LogOut, CreditCard, Zap
+  ShoppingCart, Loader2, Wand2, AlertTriangle, X, CheckCircle, Plus, Edit, Info, BookCopy, LogOut, CreditCard, Zap
 } from 'lucide-react';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { createWish, getUserProfile, refineWish } from '@/services/api';
 import type { CartItem } from '@/context/CartContext';
@@ -126,7 +127,16 @@ function Header() {
   return (
     <header className="flex-shrink-0 sticky top-0 z-30 bg-background/80 backdrop-blur-sm shadow-sm border-b">
       <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2"><Feather className="w-6 h-6 text-primary" /><span className="font-display text-xl font-bold">Saras</span></Link>
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Saras Logo"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
+          <span className="font-display text-xl font-bold">Saras</span>
+        </Link>
         <ProfileButton />
       </div>
     </header>

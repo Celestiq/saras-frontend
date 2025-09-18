@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Feather, Loader2, AlertTriangle, BookCopy, Hash, Pause, Play, X } from 'lucide-react';
+import { Loader2, AlertTriangle, BookCopy, Hash, Pause, Play, X } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -88,7 +89,13 @@ export default function ManageOrdersPage() {
             <header className="flex-shrink-0 sticky top-0 z-30 bg-background/80 backdrop-blur-sm shadow-sm border-b">
                 <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <a href="/create" className="flex items-center gap-2">
-                        <Feather className="w-6 h-6 text-primary" />
+                        <Image
+                            src="/logo.png"
+                            alt="Saras Logo"
+                            width={24}
+                            height={24}
+                            className="w-6 h-6"
+                        />
                         <span className="font-display text-xl font-bold">Saras</span>
                     </a>
                 </div>

@@ -1,6 +1,7 @@
 // components/create/Header.tsx
-import { ShoppingCart, Feather } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 
 export default function Header() {
@@ -8,7 +9,13 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between p-4 border-b">
       <Link href="/" className="flex items-center gap-2">
-        <Feather className="w-6 h-6 text-accent" />
+        <Image
+          src="/logo.png"
+          alt="Saras Logo"
+          width={24}
+          height={24}
+          className="w-6 h-6"
+        />
         <span className="font-display text-2xl font-bold">Saras</span>
       </Link>
       <Link href="/cart" className="relative">
