@@ -354,11 +354,16 @@ function OrderHistorySection({ orders }: { orders: OrderResponse[] }) {
         );
     }
 
+    // Sort orders by created_at date in descending order (latest first)
+    const sortedOrders = [...orders].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
     return (
         <div>
             <h2 className="font-display text-2xl font-bold mb-6">Order History</h2>
             <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
-                {orders.map(order => <OrderCard key={order.id} order={order} />)}
+                {sortedOrders.map(order => <OrderCard key={order.id} order={order} />)}
             </div>
         </div>
     );

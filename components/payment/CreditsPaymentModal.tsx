@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface CreditsPaymentModalProps {
         price: number;
     } | null;
     isLoading: boolean;
+    isPayPalLoading?: boolean;
+    isCashfreeLoading?: boolean;
 }
 
 export function CreditsPaymentModal({
@@ -23,9 +25,36 @@ export function CreditsPaymentModal({
     onPayPalCheckout,
     onCashfreeCheckout,
     selectedPackage,
-    isLoading
+    isLoading,
+    isPayPalLoading = false,
+    isCashfreeLoading = false
 }: CreditsPaymentModalProps) {
     const [selectedMethod, setSelectedMethod] = useState<'paypal' | 'cashfree' | null>(null);
+    const [showWarning, setShowWarning] = useState(false);
+
+    // Check if any payment method is loading
+    const isAnyLoading = isLoading ||
+        (selectedMethod === 'paypal' && isPayPalLoading) ||
+        (selectedMethod === 'cashfree' && isCashfreeLoading);
+
+    // Show warning after 5 seconds of loading
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+
+        if (isAnyLoading) {
+            timer = setTimeout(() => {
+                setShowWarning(true);
+            }, 5000); // 5 seconds
+        } else {
+            setShowWarning(false);
+        }
+
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
+    }, [isAnyLoading]);
 
     const handleMethodSelect = (method: 'paypal' | 'cashfree') => {
         setSelectedMethod(method);
@@ -37,7 +66,7 @@ export function CreditsPaymentModal({
         } else if (selectedMethod === 'cashfree') {
             onCashfreeCheckout();
         }
-        onClose();
+        // Don't close the modal - let the loading state show until redirect
     };
 
     const formatPrice = (price: number) => {
@@ -158,10 +187,10 @@ export function CreditsPaymentModal({
                                     </Button>
                                     <Button
                                         onClick={handleConfirmPayment}
-                                        disabled={!selectedMethod || isLoading}
+                                        disabled={!selectedMethod || isAnyLoading}
                                         className="flex-1"
                                     >
-                                        {isLoading ? (
+                                        {isAnyLoading ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                                                 Processing...
@@ -171,6 +200,15 @@ export function CreditsPaymentModal({
                                         )}
                                     </Button>
                                 </div>
+
+                                {/* Warning text when loading for 5+ seconds */}
+                                {showWarning && (
+                                    <div className="text-center mt-2">
+                                        <p className="text-xs text-red-500">
+                                            Currently processing your payment. Please wait for a moment. Reload the page if you want to try again.
+                                        </p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </motion.div>

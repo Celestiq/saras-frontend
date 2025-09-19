@@ -37,7 +37,8 @@ const MotionButton = motion(Button);
 // --- Sub-Components ---
 
 function ProfileButton() {
-  const [user, setUser] = useState<{ name: string; email: string; imageUrl: string, credits: number }>({ name: '', email: '', imageUrl: '', credits: 0 });
+  const { userCredits } = useCart();
+  const [user, setUser] = useState<{ name: string; email: string; imageUrl: string }>({ name: '', email: '', imageUrl: '' });
 
   useEffect(() => {
     // Fetch user profile on component mount
@@ -47,8 +48,7 @@ function ProfileButton() {
         setUser({
           name: profile.full_name,
           email: profile.email,
-          imageUrl: profile.avatar_url || "",
-          credits: profile.credits || 0
+          imageUrl: profile.avatar_url || ""
         });
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -74,7 +74,7 @@ function ProfileButton() {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <p className="bg-muted-foreground text-sm text-white p-2 rounded-md mr-4 hidden md:inline cursor-pointer">Credits: <span className="font-bold">{user.credits}</span></p>
+            <p className="bg-muted-foreground text-sm text-white p-2 rounded-md mr-4 hidden md:inline cursor-pointer">Credits: <span className="font-bold">{userCredits}</span></p>
           </TooltipTrigger>
           <TooltipContent className="p-4 max-w-xs bg-transparent">
             <div className="text-center space-y-1">
@@ -166,7 +166,7 @@ function WishInputCard({ onCreate, onRefine, onNew, onStartRefine, pageState, in
     if (inputMode === 'create') { onCreate(text); } else { onRefine(text); }
   };
 
-  const label = inputMode === 'create' ? "I wish I had a book that" : "This book should...";
+  const label = inputMode === 'create' ? "I wish I had a book about" : "This book should...";
   const buttonText = inputMode === 'create' ? "See my plan" : "Refine";
 
   return (
@@ -261,62 +261,27 @@ function ModuleCard({ module, color }: { module: Module; color: string }) {
   );
 }
 
-function SkeletonPlan() {
-  return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <div className="h-8 bg-muted rounded-md w-2/3 animate-pulse"></div>
-      </CardHeader>
-      <CardContent className="flex-grow space-y-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-muted rounded-lg h-16 w-full animate-pulse"></div>
-        ))}
-      </CardContent>
-      <CardFooter className="flex-shrink-0 flex items-center justify-center gap-4 pt-4 border-t">
-        <div className="h-10 bg-muted rounded-lg w-32 animate-pulse"></div>
-      </CardFooter>
-    </Card>
-  );
-}
 
 function CartPanel() {
-  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, checkCredits, isLoading } = useCart();
-  // const [creditInfo, setCreditInfo] = useState<{ cart_total: number, user_credits: number, sufficient_credits: boolean, has_profile: boolean } | null>(null);
-  // const [isCheckingCredits, setIsCheckingCredits] = useState(false);
-  // const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
-  // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  // const isCheckingCreditsRef = useRef(false);
-
-  const [userCredits, setUserCredits] = useState<number>(0);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(true); // For the initial load
+  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, userCredits, isLoading } = useCart();
 
   const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
+  const [isPayPalLoading, setIsPayPalLoading] = useState(false);
+  const [isCashfreeLoading, setIsCashfreeLoading] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchUserCredits() {
-      setIsLoadingCredits(true);
-      try {
-        // The checkCredits API call now only runs once
-        const info = await checkCredits();
-        setUserCredits(info.user_credits || 0);
-      } catch (error) {
-        console.error("Failed to fetch user credits:", error);
-      } finally {
-        setIsLoadingCredits(false);
-      }
-    }
-    fetchUserCredits();
-  }, [checkCredits]);
-
   const handlePayPalCheckout = async () => {
+    setIsPayPalLoading(true);
     try {
       const approvalUrl = await checkoutWithPayPal();
       window.location.href = approvalUrl;
+      // Note: Don't reset loading state on success - user will be redirected
     } catch (error: unknown) {
       console.error("PayPal checkout failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Checkout failed: ${errorMessage}`);
+      setIsPayPalLoading(false);
+      // Only reset loading state on error so user can try again
     }
   };
 
@@ -336,22 +301,27 @@ function CartPanel() {
       }
 
       window.location.href = '/payment/success';
+      // Note: Modal will stay open until redirect completes
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Credit checkout failed: ${errorMessage}`);
       setIsCreditCheckoutLoading(false);
-
+      // Modal stays open on error so user can try again
     }
   };
 
   const handleCashfreeCheckout = async () => {
+    setIsCashfreeLoading(true);
     try {
       await checkoutWithCashfree();
       // The checkoutWithCashfree function handles redirecting to success page
+      // Note: Don't reset loading state on success - user will be redirected
     } catch (error: unknown) {
       console.error("Cashfree checkout failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Cashfree checkout failed: ${errorMessage}`);
+      setIsCashfreeLoading(false);
+      // Only reset loading state on error so user can try again
     }
   };
 
@@ -410,16 +380,7 @@ function CartPanel() {
             {/* Left side container for credit button OR purchase text */}
             <div className="w-1/2">
               <AnimatePresence mode="wait" initial={false}>
-                {isLoadingCredits ? (
-                  <motion.div
-                    key="loader"
-                    {...flipVariants}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="h-12 flex items-center justify-center"
-                  >
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </motion.div>
-                ) : sufficientCredits ? (
+                {sufficientCredits ? (
                   <motion.div
                     key="credit-button"
                     {...flipVariants}
@@ -506,6 +467,8 @@ function CartPanel() {
         userCredits={userCredits}
         sufficientCredits={sufficientCredits}
         isCreditCheckoutLoading={isCreditCheckoutLoading}
+        isPayPalLoading={isPayPalLoading}
+        isCashfreeLoading={isCashfreeLoading}
         cartTotal={cart?.total || 0}
       />
     </Card>

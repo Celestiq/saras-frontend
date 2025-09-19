@@ -60,13 +60,46 @@ function PaymentProcessor() {
                 orderId: searchParams.get('token') || searchParams.get('order_id')
             });
 
-            // Clear session storage items after reading them
-            sessionStorage.removeItem('paypal_payment_type');
-            sessionStorage.removeItem('paypal_subscription_id');
-            sessionStorage.removeItem('credits_order_id');
-            sessionStorage.removeItem('cashfree_order_id');
+            // Check if this is a page refresh (no session storage data available)
+            const isPageRefresh = !paymentType && !subscriptionId && !creditsOrderId && !cashfreeOrderId;
+
+            // Clear session storage items after reading them (only if not a refresh)
+            if (!isPageRefresh) {
+                sessionStorage.removeItem('paypal_payment_type');
+                sessionStorage.removeItem('paypal_subscription_id');
+                sessionStorage.removeItem('credits_order_id');
+                sessionStorage.removeItem('cashfree_order_id');
+            }
 
             let finalOrderId = orderId || creditsOrderId;
+
+            // Handle page refresh - if we have URL parameters but no session storage data,
+            // just fetch the order status directly without processing payment again
+            if (isPageRefresh && (orderId || (isCreditPurchase && isCashfreePayment))) {
+                try {
+                    setMessage('Loading your order details...');
+
+                    if (isCreditPurchase && isCashfreePayment) {
+                        // For Cashfree credits on refresh, we can't re-verify but we can show success
+                        setStatus('success');
+                        setMessage('Your credit purchase was completed successfully!');
+                        return;
+                    } else if (orderId) {
+                        // For regular orders, fetch the order details directly
+                        const orderData = await getOrderById(orderId);
+                        setOrder(orderData);
+                        setStatus('success');
+                        setMessage('Payment completed successfully! Your order details have been updated.');
+                        return;
+                    }
+                } catch (error: unknown) {
+                    console.error('Failed to fetch order on refresh:', error);
+                    // If we can't fetch order details, show a generic success message
+                    setStatus('success');
+                    setMessage('Your payment was processed successfully! Please check your order history for details.');
+                    return;
+                }
+            }
 
             if (isCashfreeCredits && creditsOrderId) {
                 // Handle Cashfree credit purchase
@@ -144,6 +177,11 @@ function PaymentProcessor() {
                 setStatus('success');
                 setMessage('Payment with credits successful! Your content generation will begin shortly.');
                 finalOrderId = creditsOrderId;
+            } else if (isPageRefresh) {
+                // Page refresh with no identifiable payment information
+                setStatus('success');
+                setMessage('Your payment has been processed. Please check your order history for details.');
+                return;
             } else {
                 setStatus('error');
                 setMessage('Could not verify payment details. Please check your order history or contact support.');

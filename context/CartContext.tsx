@@ -54,6 +54,7 @@ export interface CartContextType {
   cart: CartState | null;
   isLoading: boolean;
   error: string | null;
+  userCredits: number;
   addItemToCart: (bookId: string, title: string) => Promise<void>;
   removeItemFromCart: (bookId: string) => Promise<void>;
   updateItemSubscription: (bookId: string, subscription: boolean) => Promise<void>;
@@ -73,6 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userCredits, setUserCredits] = useState<number>(0);
 
   // Add this helper function at the top of the component
   const isTokenValid = useCallback((token: string): boolean => {
@@ -91,6 +93,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (!token) {
       setCart(null);
+      setUserCredits(0);
       setIsLoading(false);
       setError(null);
       return;
@@ -100,6 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!isTokenValid(token)) {
       localStorage.removeItem('authToken');
       setCart(null);
+      setUserCredits(0);
       setIsLoading(false);
       setError(null);
       return;
@@ -108,8 +112,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       setIsLoading(true);
-      const cartData = await getCart();
+
+      // Fetch cart and credits in parallel
+      const [cartData, creditInfo] = await Promise.all([
+        getCart(),
+        apiCheckCredits().catch(() => ({ user_credits: 0 })) // Fallback to 0 credits if check fails
+      ]);
+
       setCart(cartData);
+      setUserCredits(creditInfo.user_credits || 0);
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
 
@@ -124,6 +135,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (isAuthError) {
         setCart(null);
+        setUserCredits(0);
         localStorage.removeItem('authToken'); // Clear invalid token
         setError(null); // Clear error since we've handled it
       } else {
@@ -239,15 +251,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const checkoutWithCredits = async (): Promise<CartState> => {
     const previousCart = cart;
+    const previousCredits = userCredits;
     if (!cart) {
       throw new Error("Cannot checkout with an empty cart.");
     }
 
+    // Optimistic UI update: clear cart and deduct credits immediately
     setCart({
       ...cart,
       items: [],
       total: 0,
     });
+    setUserCredits(prev => Math.max(0, prev - cart.total));
 
     try {
       // In a real app, you'd get this from a time picker.
@@ -270,6 +285,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       console.error("Credit checkout failed:", err);
       setCart(previousCart);
+      setUserCredits(previousCredits); // Revert credits on failure
       // setError(err.message || 'Unknown error occurred');
       // alert(`Credit checkout failed: ${err.message || 'Unknown error occurred'}`);
       throw err;
@@ -289,7 +305,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const checkoutWithPayPal = async (): Promise<string> => {
     try {
-      // The backend now decides the payment type (subscription or one-time order)
       const response = await createPayPalPayment();
       const approvalUrl = response.approval_url;
 
@@ -353,6 +368,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     cart,
     isLoading,
     error,
+    userCredits,
     addItemToCart,
     removeItemFromCart,
     updateItemSubscription,

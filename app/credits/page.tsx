@@ -50,6 +50,7 @@ export default function CreditsPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isPayPalLoading, setIsPayPalLoading] = useState(false);
     const [isCashfreeLoading, setIsCashfreeLoading] = useState(false);
 
     const handleSelectPackage = (packageId: string) => {
@@ -79,7 +80,7 @@ export default function CreditsPage() {
         const packageData = creditPackages.find(pkg => pkg.id === selectedPackage);
         if (!packageData) return;
 
-        setIsLoading(true);
+        setIsPayPalLoading(true);
         setError(null);
 
         try {
@@ -101,14 +102,15 @@ export default function CreditsPage() {
                 // Redirect to PayPal for payment
                 console.log('Redirecting to PayPal approval URL:', response.approval_url);
                 window.location.href = response.approval_url;
+                // Note: Don't reset loading state on success - user will be redirected
             } else {
                 throw new Error('No approval URL received from server');
             }
         } catch (err) {
             console.error('PayPal credit purchase failed:', err);
             setError(err instanceof Error ? err.message : 'Failed to initiate credit purchase. Please try again.');
-        } finally {
-            setIsLoading(false);
+            setIsPayPalLoading(false);
+            // Only reset loading state on error so user can try again
         }
     };
 
@@ -148,14 +150,15 @@ export default function CreditsPage() {
 
                 // Redirect to success page
                 window.location.href = '/payment/success?gateway=cashfree&type=credits';
+                // Note: Don't reset loading state on success - user will be redirected
             } else {
                 throw new Error(result.message || 'Payment failed');
             }
         } catch (err) {
             console.error('Cashfree credit purchase failed:', err);
             setError(err instanceof Error ? err.message : 'Failed to process payment. Please try again.');
-        } finally {
             setIsCashfreeLoading(false);
+            // Only reset loading state on error so user can try again
         }
     };
 
@@ -276,10 +279,10 @@ export default function CreditsPage() {
                         <Button
                             size="lg"
                             className="px-8 py-3 text-lg"
-                            disabled={!selectedPackage || isLoading || isCashfreeLoading}
+                            disabled={!selectedPackage || isPayPalLoading || isCashfreeLoading}
                             onClick={handleProceedToCheckout}
                         >
-                            {(isLoading || isCashfreeLoading) ? (
+                            {(isPayPalLoading || isCashfreeLoading) ? (
                                 <>
                                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                     Processing...
@@ -291,7 +294,7 @@ export default function CreditsPage() {
                                 </>
                             )}
                         </Button>
-                        {!selectedPackage && !isLoading && (
+                        {!selectedPackage && !isPayPalLoading && !isCashfreeLoading && (
                             <p className="text-sm text-muted-foreground mt-2">
                                 Please select a package to continue
                             </p>
@@ -311,7 +314,9 @@ export default function CreditsPage() {
                     onPayPalCheckout={handlePayPalCheckout}
                     onCashfreeCheckout={handleCashfreeCheckout}
                     selectedPackage={selectedPackage ? creditPackages.find(pkg => pkg.id === selectedPackage) || null : null}
-                    isLoading={isLoading || isCashfreeLoading}
+                    isLoading={isPayPalLoading || isCashfreeLoading}
+                    isPayPalLoading={isPayPalLoading}
+                    isCashfreeLoading={isCashfreeLoading}
                 />
             </div>
         </div>
