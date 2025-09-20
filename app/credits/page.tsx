@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Download, CreditCard, Loader2 } from 'lucide-react';
+import { ArrowLeft, Zap, Download, CreditCard, Loader2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,12 +34,12 @@ const creditPackages: CreditPackage[] = [
 
 const perks = [
     {
-        icon: Download,
-        title: 'Downloads',
-        description: 'You can download the books within minutes. No need to wait for newsletters.',
+        icon: Zap,
+        title: 'Lightning Fast Checkout',
+        description: 'Just click and blink.',
     },
     {
-        icon: Zap,
+        icon: DollarSign,
         title: 'Cost Effective',
         description: 'It is much cheaper to generate books.',
     },
@@ -215,7 +215,8 @@ export default function CreditsPage() {
 
                 {/* Pricing Cards */}
                 <div className="mb-6">
-                    <h2 className="text-2xl font-semibold mb-6 text-center">Choose Your Package</h2>
+                    <h2 className="text-2xl font-semibold text-center">Choose Your Package</h2>
+                    <p className="text-center text-xs italic text-muted-foreground mb-6">*1 credit is equivalent to $1 worth purchase</p>
                     <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                         {creditPackages.map((pkg, index) => (
                             <motion.div
@@ -244,9 +245,6 @@ export default function CreditsPage() {
                                         <div className="text-4xl font-bold text-primary mt-2">
                                             ${pkg.price}
                                         </div>
-                                        <p className="text-muted-foreground">
-                                            ${(pkg.price / pkg.credits).toFixed(2)} per credit
-                                        </p>
                                     </CardHeader>
 
                                     <CardContent className="pt-0">

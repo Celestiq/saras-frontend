@@ -116,9 +116,9 @@ export function CreditsPaymentModal({
                                     <div className="text-2xl font-bold text-primary">
                                         {formatPrice(selectedPackage.price)}
                                     </div>
-                                    <div className="text-xs">
+                                    {/* <div className="text-xs">
                                         {formatPrice(selectedPackage.price / selectedPackage.credits)} per credit
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 <div className="space-y-3">
@@ -143,7 +143,7 @@ export function CreditsPaymentModal({
                                             <div className="flex-1">
                                                 <div className="font-medium">PayPal</div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    Pay with PayPal account or credit card
+                                                    Pay with PayPal account or credit card <br />(for international customers)
                                                 </div>
                                             </div>
                                         </div>
@@ -170,7 +170,7 @@ export function CreditsPaymentModal({
                                             <div className="flex-1">
                                                 <div className="font-medium">Cashfree</div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    Pay with UPI, cards, net banking, and more
+                                                    Pay with UPI, cards, net banking, and more (for Indian customers)
                                                 </div>
                                             </div>
                                         </div>

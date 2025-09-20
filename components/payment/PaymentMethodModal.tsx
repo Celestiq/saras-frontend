@@ -137,7 +137,7 @@ export function PaymentMethodModal({
                                             <div className="flex-1">
                                                 <div className="font-medium">PayPal</div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    Pay with PayPal account or credit card
+                                                    Pay with PayPal account or credit card <br />(for international customers)
                                                 </div>
                                             </div>
                                         </div>
@@ -164,7 +164,7 @@ export function PaymentMethodModal({
                                             <div className="flex-1">
                                                 <div className="font-medium">Cashfree</div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    Pay with UPI, cards, net banking, and more
+                                                    Pay with UPI, cards, net banking, and more <br />(for Indian customers)
                                                 </div>
                                             </div>
                                         </div>

@@ -88,15 +88,6 @@ export function QuoteDisplay({ className = "" }: QuoteDisplayProps) {
                         }}
                         className="max-w-2xl"
                     >
-                        {/* <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.2, duration: 0.4 }}
-                            className="text-6xl text-primary/20 mb-6"
-                        >
-                            "
-                        </motion.div> */}
-
                         <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -105,38 +96,8 @@ export function QuoteDisplay({ className = "" }: QuoteDisplayProps) {
                         >
                             {`"${currentQuote.text}"`}
                         </motion.p>
-
-                        {/* <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.4, duration: 0.4 }}
-                            className="text-6xl text-primary/20"
-                        >
-                            "
-                        </motion.div> */}
                     </motion.div>
                 </AnimatePresence>
-
-                {/* Progress indicator
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.3 }}
-                    className="flex space-x-2 mt-8"
-                >
-                    {quotes.map((_, index) => (
-                        <motion.div
-                            key={index}
-                            className={`w-2 h-2 rounded-full ${index === currentQuoteIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-                                }`}
-                            animate={{
-                                scale: index === currentQuoteIndex ? 1.2 : 1,
-                                opacity: index === currentQuoteIndex ? 1 : 0.3
-                            }}
-                            transition={{ duration: 0.3 }}
-                        />
-                    ))}
-                </motion.div> */}
             </CardContent>
         </Card>
     );

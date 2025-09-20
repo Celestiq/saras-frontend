@@ -1,7 +1,7 @@
 // frontend/app/create/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -31,8 +31,111 @@ interface Topic { title: string; context: string; }
 interface Module { module_title: string; topics: Topic[]; }
 interface Plan { plan_id: string; modules: Module[]; subject: string; book_id: string; }
 
-const TYPEWRITER_HINTS = ["explain AI for product managers", "teach me SQL from scratch", "make Indian philosophy easy"];
 const MotionButton = motion(Button);
+
+// Custom hook to load placeholder ideas from JSON
+function usePlaceholderIdeas() {
+  const [placeholders, setPlaceholders] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPlaceholders = async () => {
+      try {
+        const response = await fetch('/assets/placeholder_ideas.json');
+        const data = await response.json();
+        setPlaceholders(data.placeholders || []);
+      } catch (error) {
+        console.error('Failed to load placeholder ideas:', error);
+        // Fallback to a few hardcoded placeholders
+        setPlaceholders([
+          "explain AI for product managers",
+          "teach me SQL from scratch",
+          "make Indian philosophy easy"
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPlaceholders();
+  }, []);
+
+  return { placeholders, isLoading };
+}
+
+function useTypewriterEffect(phrases: string[], typingSpeed: number = 100) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const getRandomPhrase = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * phrases.length);
+    return phrases[randomIndex];
+  }, [phrases]);
+
+  useEffect(() => {
+    if (phrases.length === 0) return;
+
+    let currentPhrase = '';
+    let charIndex = 0;
+    let typingTimer: NodeJS.Timeout;
+    let stayTimer: NodeJS.Timeout;
+    let clearTimer: NodeJS.Timeout;
+
+    const startTypingCycle = () => {
+      // Get a new random phrase
+      currentPhrase = getRandomPhrase();
+      charIndex = 0;
+      setDisplayedText('');
+      setIsTyping(true);
+
+      const typeNextChar = () => {
+        if (charIndex < currentPhrase.length) {
+          setDisplayedText(currentPhrase.slice(0, charIndex + 1));
+          charIndex++;
+          typingTimer = setTimeout(typeNextChar, typingSpeed);
+        } else {
+          // Finished typing, stay for 500ms
+          setIsTyping(false);
+          stayTimer = setTimeout(() => {
+            // Start clearing the text
+            const clearText = () => {
+              setDisplayedText(prev => {
+                if (prev.length > 0) {
+                  const newText = prev.slice(0, -1);
+                  if (newText.length > 0) {
+                    clearTimer = setTimeout(clearText, typingSpeed / 2); // Clear faster than typing
+                  } else {
+                    // Text is fully cleared, start next cycle after a brief pause
+                    setTimeout(startTypingCycle, 300);
+                  }
+                  return newText;
+                } else {
+                  return '';
+                }
+              });
+            };
+            clearText();
+          }, 500); // Stay for 500ms
+        }
+      };
+
+      typeNextChar();
+    };
+
+    // Start the first cycle
+    startTypingCycle();
+
+    // Cleanup function
+    return () => {
+      clearTimeout(typingTimer);
+      clearTimeout(stayTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [phrases, typingSpeed, getRandomPhrase]);
+
+  return { displayedText, isTyping };
+}
 
 // --- Sub-Components ---
 
@@ -153,6 +256,8 @@ function WishInputCard({ onCreate, onRefine, onNew, onStartRefine, pageState, in
 }) {
   const [text, setText] = useState('');
   const isSubmitting = pageState === 'submitting';
+  const { placeholders, isLoading: placeholdersLoading } = usePlaceholderIdeas();
+  const { displayedText, isTyping } = useTypewriterEffect(placeholders, 80);
 
   useEffect(() => {
     if (inputMode === 'refine' || (inputMode === 'create' && pageState === 'idle')) {
@@ -173,7 +278,35 @@ function WishInputCard({ onCreate, onRefine, onNew, onStartRefine, pageState, in
     <Card className="rounded-lg w-full bg-card/80 backdrop-blur shadow-md border p-4">
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
         <label htmlFor="wish-input" className="font-medium whitespace-nowrap">{label}</label>
-        <Input id="wish-input" value={text} onChange={e => setText(e.target.value)} placeholder={TYPEWRITER_HINTS[0]} className="flex-grow bg-transparent border-0 border-b-2 rounded-none focus-visible:ring-0 focus:border-primary" disabled={isSubmitting} maxLength={140} />
+        <div className="relative flex-grow">
+          <Input
+            id="wish-input"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            className="flex-grow bg-transparent border-0 border-b-2 rounded-none focus-visible:ring-0 focus:border-primary"
+            disabled={isSubmitting}
+            maxLength={140}
+            placeholder=""
+          />
+          {!text && inputMode === 'create' && !placeholdersLoading && placeholders.length > 0 && (
+            <div className="absolute inset-0 pointer-events-none flex items-center text-muted-foreground/60">
+              <span>{displayedText}</span>
+              {isTyping && (
+                <motion.span
+                  className="ml-0.5 text-muted-foreground/60"
+                  animate={{ opacity: [1, 0] }}
+                  transition={{
+                    duration: 0.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  |
+                </motion.span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="w-full sm:w-auto flex items-center gap-2">
           <AnimatePresence mode="wait">
             {pageState === 'planReady' ? (
@@ -314,8 +447,7 @@ function CartPanel() {
     setIsCashfreeLoading(true);
     try {
       await checkoutWithCashfree();
-      // The checkoutWithCashfree function handles redirecting to success page
-      // Note: Don't reset loading state on success - user will be redirected
+
     } catch (error: unknown) {
       console.error("Cashfree checkout failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -483,7 +615,7 @@ function CartItemCard({ item, onTypeChange, onRemove }: { item: CartItem, onType
         <div className="flex items-center space-x-2 text-sm mt-1">
           <label htmlFor={`switch-${item.book_id}`} className="font-medium pr-1">${item.unit_price.toFixed(2)}</label>
           <Switch id={`switch-${item.book_id}`} checked={item.subscription} onCheckedChange={(checked) => onTypeChange(item.book_id, checked)} className="data-[state=checked]:bg-primary" />
-          <span className="w-24 text-left capitalize">{item.subscription ? 'Subscription' : 'One-Time'}</span>
+          <span className="w-24 text-left">{item.subscription ? 'Newsletter' : 'eBook'}</span>
         </div>
       </div>
       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0" onClick={() => onRemove(item.book_id)}><X className="w-5 h-5" /></Button>
