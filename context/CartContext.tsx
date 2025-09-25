@@ -1,5 +1,5 @@
 // frontend/context/CartContext.tsx
-import { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useState, useContext, ReactNode, useCallback, useEffect, useRef } from 'react';
 import {
   getCart,
   addItemToCart as apiAddItemToCart,
@@ -55,6 +55,7 @@ export interface CartContextType {
   isLoading: boolean;
   error: string | null;
   userCredits: number;
+  isCheckingOut: boolean;
   addItemToCart: (bookId: string, title: string) => Promise<void>;
   removeItemFromCart: (bookId: string) => Promise<void>;
   updateItemSubscription: (bookId: string, subscription: boolean) => Promise<void>;
@@ -66,6 +67,7 @@ export interface CartContextType {
   isItemInCart: (bookId: string) => boolean;
   getCartCount: () => number;
   setCart: React.Dispatch<React.SetStateAction<CartState | null>>;
+  fetchCredits: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -75,6 +77,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userCredits, setUserCredits] = useState<number>(0);
+  const [isFetchingCart, setIsFetchingCart] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const fetchCartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchCartPromiseRef = useRef<Promise<void> | null>(null);
+  const checkoutLockRef = useRef<boolean>(false);
+  const cartClearedRef = useRef<boolean>(false);
 
   // Add this helper function at the top of the component
   const isTokenValid = useCallback((token: string): boolean => {
@@ -88,7 +96,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchCart = useCallback(async () => {
+  // Separate function to fetch only credits when needed
+  const fetchCredits = useCallback(async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token || !isTokenValid(token)) {
+      setUserCredits(0);
+      return;
+    }
+
+    try {
+      const creditInfo = await apiCheckCredits();
+      setUserCredits(creditInfo.user_credits || 0);
+    } catch (err: any) {
+      console.error("Failed to fetch credits:", err);
+      // Don't update credits on error - keep current value
+    }
+  }, [isTokenValid]);
+
+  const fetchCart = useCallback(async (force = false) => {
+    // If checkout is in progress and cart was already cleared, don't fetch unless forced
+    if (isCheckingOut && cartClearedRef.current && !force) {
+      console.log('fetchCart skipped: checkout in progress and cart already cleared');
+      return;
+    }
+
+    // If there's already a fetchCart in progress, return the existing promise
+    if (fetchCartPromiseRef.current && !force) {
+      console.log('fetchCart already in progress, returning existing promise...');
+      return fetchCartPromiseRef.current;
+    }
+
+    // Prevent multiple concurrent fetchCart calls with state check as backup
+    if (isFetchingCart && !force) {
+      console.log('fetchCart already in progress (state check), skipping...');
+      return;
+    }
+
     const token = localStorage.getItem('authToken');
 
     if (!token) {
@@ -109,46 +152,73 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    try {
-      setError(null);
-      setIsLoading(true);
+    // Create and store the fetch promise
+    const fetchPromise = (async () => {
+      setIsFetchingCart(true);
 
-      // Fetch cart and credits in parallel
-      const [cartData, creditInfo] = await Promise.all([
-        getCart(),
-        apiCheckCredits().catch(() => ({ user_credits: 0 })) // Fallback to 0 credits if check fails
-      ]);
+      try {
+        setError(null);
+        setIsLoading(true);
 
-      setCart(cartData);
-      setUserCredits(creditInfo.user_credits || 0);
-    } catch (err: any) {
-      console.error("Failed to fetch cart:", err);
+        // Only fetch cart data - credits will be fetched separately when needed
+        const cartData = await getCart();
 
-      // Check for various authentication error patterns
-      const isAuthError = err.message.includes('Authentication token not found') ||
-        err.message.includes('401') ||
-        err.message.includes('Unauthorized') ||
-        err.message.includes('Invalid token') ||
-        err.message.includes('Token expired') ||
-        err.message.includes('JWT') ||
-        err.status === 401;
+        // If checkout was completed and cart was cleared, don't override the cleared state
+        if (cartClearedRef.current && (!cartData || cartData.items.length === 0)) {
+          console.log('Cart fetch confirmed empty cart after checkout');
+          setCart(null);
+          cartClearedRef.current = false; // Reset the flag
+        } else if (!cartClearedRef.current) {
+          setCart(cartData);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch cart:", err);
 
-      if (isAuthError) {
-        setCart(null);
-        setUserCredits(0);
-        localStorage.removeItem('authToken'); // Clear invalid token
-        setError(null); // Clear error since we've handled it
-      } else {
-        setError(err.message || 'Could not load cart data.');
+        // Check for various authentication error patterns
+        const isAuthError = err.message.includes('Authentication token not found') ||
+          err.message.includes('401') ||
+          err.message.includes('Unauthorized') ||
+          err.message.includes('Invalid token') ||
+          err.message.includes('Token expired') ||
+          err.message.includes('JWT') ||
+          err.status === 401;
+
+        if (isAuthError) {
+          setCart(null);
+          setUserCredits(0);
+          localStorage.removeItem('authToken'); // Clear invalid token
+          setError(null); // Clear error since we've handled it
+        } else {
+          setError(err.message || 'Could not load cart data.');
+        }
+      } finally {
+        setIsLoading(false);
+        setIsFetchingCart(false);
+        fetchCartPromiseRef.current = null; // Clear the promise reference
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isTokenValid]);
+    })();
+
+    // Store the promise reference
+    fetchCartPromiseRef.current = fetchPromise;
+
+    return fetchPromise;
+  }, [isTokenValid, isCheckingOut]);
 
   useEffect(() => {
+    // Fetch both cart and credits on initial load
     fetchCart();
-  }, []);
+    fetchCredits();
+
+    // Cleanup timeout and promise reference on unmount
+    return () => {
+      if (fetchCartTimeoutRef.current) {
+        clearTimeout(fetchCartTimeoutRef.current);
+      }
+      fetchCartPromiseRef.current = null;
+      checkoutLockRef.current = false;
+      cartClearedRef.current = false;
+    };
+  }, [fetchCart, fetchCredits]);
 
   // --- Cart Actions ---
   const addItemToCart = async (bookId: string, title: string) => {
@@ -239,8 +309,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       // In a real app, you'd get this from a time picker.
       await apiCheckoutCart("07:00:00");
-      // After checkout, the cart is no longer a 'draft', so we refetch.
-      fetchCart();
+      // Clear cart optimistically - no need to refetch since cart should be empty after checkout
+      setCart(null);
       alert("Checkout successful! Your book is being generated.");
     } catch (err: any) {
       console.error("Checkout failed:", err);
@@ -250,18 +320,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const checkoutWithCredits = async (): Promise<CartState> => {
+    // Prevent multiple concurrent checkouts
+    if (checkoutLockRef.current) {
+      console.log('Checkout already in progress, preventing duplicate checkout');
+      throw new Error('Checkout is already in progress. Please wait.');
+    }
+
     const previousCart = cart;
     const previousCredits = userCredits;
     if (!cart) {
       throw new Error("Cannot checkout with an empty cart.");
     }
 
-    // Optimistic UI update: clear cart and deduct credits immediately
-    setCart({
-      ...cart,
-      items: [],
-      total: 0,
-    });
+    // Set checkout lock and state
+    checkoutLockRef.current = true;
+    setIsCheckingOut(true);
+    cartClearedRef.current = true;
+
+    // Immediately and definitively clear cart state
+    setCart(null);
     setUserCredits(prev => Math.max(0, prev - cart.total));
 
     try {
@@ -273,22 +350,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('credits_order_id', result.order.id);
       }
 
-      // After checkout, the cart is no longer a 'draft', so we refetch.
-      fetchCart();
-
       if (!result.order) {
         throw new Error("Checkout succeeded but no order data was returned.");
       }
+
+      // Schedule a delayed cart refresh to ensure backend has processed the checkout
+      // This prevents race conditions where fetchCart is called before backend clears the cart
+      if (fetchCartTimeoutRef.current) {
+        clearTimeout(fetchCartTimeoutRef.current);
+      }
+      fetchCartTimeoutRef.current = setTimeout(() => {
+        console.log('Post-checkout cart refresh after delay');
+        cartClearedRef.current = false; // Allow normal cart operations
+        fetchCart(true); // Force fetch to get updated state
+        fetchCredits(); // Refresh credits after purchase
+      }, 1500);
+
       return result.order;
-      // window.location.href = '/payment/success';
 
     } catch (err: any) {
       console.error("Credit checkout failed:", err);
+
+      // Reset checkout state on failure
+      cartClearedRef.current = false;
       setCart(previousCart);
-      setUserCredits(previousCredits); // Revert credits on failure
-      // setError(err.message || 'Unknown error occurred');
-      // alert(`Credit checkout failed: ${err.message || 'Unknown error occurred'}`);
+      setUserCredits(previousCredits);
+
       throw err;
+    } finally {
+      // Always release the checkout lock and reset checkout state
+      checkoutLockRef.current = false;
+      setIsCheckingOut(false);
     }
   };
 
@@ -342,8 +434,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem('cashfree_order_id', result.order.id);
         }
 
-        // After successful payment, refetch cart
-        fetchCart();
+        // Cart will be empty after successful payment - no need to refetch
 
         // Redirect to success page
         window.location.href = '/payment/success?gateway=cashfree';
@@ -369,6 +460,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     userCredits,
+    isCheckingOut,
     addItemToCart,
     removeItemFromCart,
     updateItemSubscription,
@@ -379,7 +471,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     checkCredits,
     isItemInCart,
     getCartCount,
-    setCart
+    setCart,
+    fetchCredits // Expose fetchCredits for when credits might have changed
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

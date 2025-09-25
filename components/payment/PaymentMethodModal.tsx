@@ -15,6 +15,7 @@ interface PaymentMethodModalProps {
     isCreditCheckoutLoading: boolean;
     isPayPalLoading?: boolean;
     isCashfreeLoading?: boolean;
+    isCheckingOut?: boolean;
     cartTotal: number;
 }
 
@@ -29,13 +30,14 @@ export function PaymentMethodModal({
     isCreditCheckoutLoading,
     isPayPalLoading = false,
     isCashfreeLoading = false,
+    isCheckingOut = false,
     cartTotal
 }: PaymentMethodModalProps) {
     const [selectedMethod, setSelectedMethod] = useState<'paypal' | 'cashfree' | 'credits' | null>(null);
     const [showWarning, setShowWarning] = useState(false);
 
     // Check if any payment method is loading
-    const isAnyLoading = (selectedMethod === 'credits' && isCreditCheckoutLoading) ||
+    const isAnyLoading = (selectedMethod === 'credits' && (isCreditCheckoutLoading || isCheckingOut)) ||
         (selectedMethod === 'paypal' && isPayPalLoading) ||
         (selectedMethod === 'cashfree' && isCashfreeLoading);
 

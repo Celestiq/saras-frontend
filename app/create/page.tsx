@@ -396,7 +396,7 @@ function ModuleCard({ module, color }: { module: Module; color: string }) {
 
 
 function CartPanel() {
-  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, userCredits, isLoading } = useCart();
+  const { cart, updateItemSubscription, removeItemFromCart, checkoutWithPayPal, checkoutWithCredits, checkoutWithCashfree, userCredits, isLoading, isCheckingOut } = useCart();
 
   const [isCreditCheckoutLoading, setIsCreditCheckoutLoading] = useState(false);
   const [isPayPalLoading, setIsPayPalLoading] = useState(false);
@@ -421,6 +421,11 @@ function CartPanel() {
   const handleCreditCheckout = async () => {
     if (!cart || cart.items.length === 0) {
       alert('Cannot checkout with an empty cart');
+      return;
+    }
+
+    if (isCheckingOut) {
+      alert('Checkout is already in progress. Please wait.');
       return;
     }
 
@@ -521,7 +526,7 @@ function CartPanel() {
                     <MotionButton
                       size="lg"
                       className="w-full h-12 text-base bg-green-600 hover:bg-green-700 text-white"
-                      disabled={!cart || cart.items.length === 0 || isCreditCheckoutLoading}
+                      disabled={!cart || cart.items.length === 0 || isCreditCheckoutLoading || isCheckingOut}
                       onClick={handleCreditCheckout}
                       // --- ADD THESE PROPS FOR THE BREATHING EFFECT ---
                       animate={{ scale: [1, 1.05, 1] }}
@@ -532,8 +537,8 @@ function CartPanel() {
                       }}
                     // --------------------------------------------------
                     >
-                      {isCreditCheckoutLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
-                      Pay with Credits
+                      {(isCreditCheckoutLoading || isCheckingOut) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
+                      {isCheckingOut ? 'Processing...' : 'Pay with Credits'}
                     </MotionButton>
                   </motion.div>
                 ) : (
@@ -578,7 +583,7 @@ function CartPanel() {
               <Button
                 size="lg"
                 className="w-full h-12 text-base"
-                disabled={!cart || cart.items.length === 0}
+                disabled={!cart || cart.items.length === 0 || isCheckingOut}
                 onClick={handleProceedToCheckout}
               >
                 <CreditCard className="w-5 h-5 mr-2" />
@@ -601,6 +606,7 @@ function CartPanel() {
         isCreditCheckoutLoading={isCreditCheckoutLoading}
         isPayPalLoading={isPayPalLoading}
         isCashfreeLoading={isCashfreeLoading}
+        isCheckingOut={isCheckingOut}
         cartTotal={cart?.total || 0}
       />
     </Card>

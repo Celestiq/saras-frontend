@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { verifyPayPalSubscription, capturePayPalOrder, getOrderById, captureCreditPurchase, verifyCashfreeCreditPurchase } from '@/services/api';
 import { Loader2, CheckCircle, AlertTriangle, Clock, Package, CreditCard, DollarSign } from 'lucide-react';
@@ -35,16 +35,54 @@ function PaymentProcessor() {
     const [status, setStatus] = useState<Status>('processing');
     const [message, setMessage] = useState('Processing your payment...');
     const [order, setOrder] = useState<Order | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    const hasProcessed = useRef(false);
+
+    // Global deduplication key based on order ID and session
+    const getDeduplicationKey = useCallback(() => {
+        const orderId = searchParams.get('token') || searchParams.get('order_id') || sessionStorage.getItem('credits_order_id');
+        const sessionId = sessionStorage.getItem('payment_session_id') || Date.now().toString();
+        return `payment_processing_${orderId}_${sessionId}`;
+    }, [searchParams]);
+
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000; // 2 seconds
+
+    // Retry logic for fetching order with exponential backoff
+    const fetchOrderWithRetry = useCallback(async (orderId: string, attempt = 1): Promise<Order | null> => {
+        try {
+            console.log(`Fetching order ${orderId}, attempt ${attempt}/${MAX_RETRIES}`);
+            const orderData = await getOrderById(orderId);
+
+            // Check if order is still in draft status and we haven't exceeded retries
+            if (orderData.status === 'draft' && attempt < MAX_RETRIES) {
+                console.log(`Order still in draft status, retrying in ${RETRY_DELAY * attempt}ms...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
+                return fetchOrderWithRetry(orderId, attempt + 1);
+            }
+
+            return orderData;
+        } catch (error: unknown) {
+            console.error(`Failed to fetch order on attempt ${attempt}:`, error);
+
+            if (attempt < MAX_RETRIES) {
+                console.log(`Retrying order fetch in ${RETRY_DELAY * attempt}ms...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
+                return fetchOrderWithRetry(orderId, attempt + 1);
+            }
+
+            throw error;
+        }
+    }, []);
 
     useEffect(() => {
         const processPayment = async () => {
             const paymentType = sessionStorage.getItem('paypal_payment_type');
-            // const paymentType = 'order'; // Hardcoded for testing
             const subscriptionId = sessionStorage.getItem('paypal_subscription_id');
             const orderId = searchParams.get('token') || searchParams.get('order_id');
-            // const orderId = "1234"; // Hardcoded for testing
             const creditsOrderId = sessionStorage.getItem('credits_order_id');
             const cashfreeOrderId = sessionStorage.getItem('cashfree_order_id');
             const isCreditPurchase = searchParams.get('type') === 'credits';
@@ -73,8 +111,6 @@ function PaymentProcessor() {
 
             let finalOrderId = orderId || creditsOrderId;
 
-            // Handle page refresh - if we have URL parameters but no session storage data,
-            // just fetch the order status directly without processing payment again
             if (isPageRefresh && (orderId || (isCreditPurchase && isCashfreePayment))) {
                 try {
                     setMessage('Loading your order details...');
@@ -85,11 +121,17 @@ function PaymentProcessor() {
                         setMessage('Your credit purchase was completed successfully!');
                         return;
                     } else if (orderId) {
-                        // For regular orders, fetch the order details directly
-                        const orderData = await getOrderById(orderId);
-                        setOrder(orderData);
-                        setStatus('success');
-                        setMessage('Payment completed successfully! Your order details have been updated.');
+                        // For regular orders, fetch the order details with retry logic
+                        const orderData = await fetchOrderWithRetry(orderId);
+                        if (orderData) {
+                            setOrder(orderData);
+                            setStatus('success');
+                            if (orderData.status === 'draft') {
+                                setMessage('Payment completed successfully! Your order is being processed...');
+                            } else {
+                                setMessage('Payment completed successfully! Your order details have been updated.');
+                            }
+                        }
                         return;
                     }
                 } catch (error: unknown) {
@@ -140,7 +182,6 @@ function PaymentProcessor() {
                     setStatus('success');
                     setMessage('Your subscription is active! Your content generation will begin shortly.');
 
-                    // Get order ID from the subscription response
                     if (subscriptionResponse.order && subscriptionResponse.order.id) {
                         finalOrderId = subscriptionResponse.order.id;
                     }
@@ -192,16 +233,39 @@ function PaymentProcessor() {
             if (finalOrderId) {
                 try {
                     setMessage('Loading order details...');
-                    const orderData = await getOrderById(finalOrderId);
-                    setOrder(orderData);
+                    setRetryCount(0); // Reset retry count for new order fetch
+                    const orderData = await fetchOrderWithRetry(finalOrderId);
+                    if (orderData) {
+                        setOrder(orderData);
+                        if (orderData.status === 'draft') {
+                            setMessage('Order is being processed. This may take a few moments...');
+                        }
+                    }
                 } catch (error: unknown) {
-                    console.error('Failed to fetch order details:', error);
+                    console.error('Failed to fetch order details after retries:', error);
                     // Don't change status to error, just show without order details
+                    setMessage('Order details are being processed. Please check your order history for updates.');
                 }
             }
         };
 
-        processPayment();
+        // Global deduplication check
+        const deduplicationKey = getDeduplicationKey();
+        const isAlreadyProcessing = localStorage.getItem(deduplicationKey);
+
+        if (!hasProcessed.current && !isAlreadyProcessing) {
+            hasProcessed.current = true; // Set the flag immediately
+            localStorage.setItem(deduplicationKey, 'processing'); // Global lock
+
+            processPayment().finally(() => {
+                // Clear the global lock after processing (success or failure)
+                localStorage.removeItem(deduplicationKey);
+            });
+        } else if (isAlreadyProcessing) {
+            console.log('Payment processing already in progress in another tab/instance, skipping...');
+            setStatus('success');
+            setMessage('Payment processing is in progress. Please wait...');
+        }
     }, [searchParams, router]);
 
     const getStatusColor = (orderStatus: string) => {
