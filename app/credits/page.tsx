@@ -108,7 +108,8 @@ export default function CreditsPage() {
             }
         } catch (err) {
             console.error('PayPal credit purchase failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to initiate credit purchase. Please try again.');
+            const errorMessage = err instanceof Error ? err.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+            setError(errorMessage);
             setIsPayPalLoading(false);
             // Only reset loading state on error so user can try again
         }
@@ -156,7 +157,8 @@ export default function CreditsPage() {
             }
         } catch (err) {
             console.error('Cashfree credit purchase failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to process payment. Please try again.');
+            const errorMessage = err instanceof Error ? err.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+            setError(errorMessage);
             setIsCashfreeLoading(false);
             // Only reset loading state on error so user can try again
         }

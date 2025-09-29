@@ -24,10 +24,37 @@ async function apiFetch(endpoint: string, options: RequestInit = {}, authenticat
         headers,
     };
 
-    const response = await fetch(`${API_PREFIX}${endpoint}`, config);
+    const url = `${API_PREFIX}${endpoint}`;
+    console.log(`API Fetch: ${options.method || 'GET'} ${url}`, { authenticated, hasToken: !!getAuthToken() });
+
+    let response;
+    try {
+        response = await fetch(url, config);
+        console.log(`API Response: ${response.status} ${response.statusText} for ${url}`);
+    } catch (error) {
+        console.error(`API Fetch Error for ${url}:`, error);
+
+        // Handle specific network errors
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+        }
+
+        throw error;
+    }
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `An unknown server error occurred for endpoint ${endpoint}.` }));
+
+        // Check if it's a payment-related endpoint and provide user-friendly error
+        const isPaymentEndpoint = endpoint.includes('/cashfree/') ||
+            endpoint.includes('/paypal/') ||
+            endpoint.includes('/credits/') ||
+            endpoint.includes('/cart/checkout');
+
+        if (isPaymentEndpoint && response.status >= 500) {
+            throw new Error('We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.');
+        }
+
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
     }
 

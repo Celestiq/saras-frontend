@@ -411,8 +411,8 @@ function CartPanel() {
       // Note: Don't reset loading state on success - user will be redirected
     } catch (error: unknown) {
       console.error("PayPal checkout failed:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Checkout failed: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+      alert(`Payment Error: ${errorMessage}`);
       setIsPayPalLoading(false);
       // Only reset loading state on error so user can try again
     }
@@ -441,8 +441,8 @@ function CartPanel() {
       window.location.href = '/payment/success';
       // Note: Modal will stay open until redirect completes
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Credit checkout failed: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+      alert(`Payment Error: ${errorMessage}`);
       setIsCreditCheckoutLoading(false);
       // Modal stays open on error so user can try again
     }
@@ -455,8 +455,8 @@ function CartPanel() {
 
     } catch (error: unknown) {
       console.error("Cashfree checkout failed:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Cashfree checkout failed: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+      alert(`Payment Error: ${errorMessage}`);
       setIsCashfreeLoading(false);
       // Only reset loading state on error so user can try again
     }

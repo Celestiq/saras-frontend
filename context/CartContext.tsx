@@ -1,5 +1,6 @@
 // frontend/context/CartContext.tsx
 import { createContext, useState, useContext, ReactNode, useCallback, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   getCart,
   addItemToCart as apiAddItemToCart,
@@ -83,6 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const fetchCartPromiseRef = useRef<Promise<void> | null>(null);
   const checkoutLockRef = useRef<boolean>(false);
   const cartClearedRef = useRef<boolean>(false);
+  const pathname = usePathname();
 
   // Add this helper function at the top of the component
   const isTokenValid = useCallback((token: string): boolean => {
@@ -114,6 +116,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [isTokenValid]);
 
   const fetchCart = useCallback(async (force = false) => {
+    // Skip cart fetching on certain pages where it's not needed
+    const skipPages = ['/payment/success', '/payment/cancelled', '/auth/login', '/auth/signup', '/auth/forgot-password'];
+    if (skipPages.some(page => pathname?.startsWith(page))) {
+      console.log('fetchCart skipped: on page that does not need cart data');
+      setCart(null);
+      setUserCredits(0);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     // If checkout is in progress and cart was already cleared, don't fetch unless forced
     if (isCheckingOut && cartClearedRef.current && !force) {
       console.log('fetchCart skipped: checkout in progress and cart already cleared');
@@ -135,6 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('authToken');
 
     if (!token) {
+      console.log('fetchCart skipped: no authentication token');
       setCart(null);
       setUserCredits(0);
       setIsLoading(false);
@@ -144,6 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Validate token before making API call
     if (!isTokenValid(token)) {
+      console.log('fetchCart skipped: invalid authentication token');
       localStorage.removeItem('authToken');
       setCart(null);
       setUserCredits(0);
@@ -160,8 +175,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setError(null);
         setIsLoading(true);
 
+        console.log('CartContext: Starting cart fetch...');
         // Only fetch cart data - credits will be fetched separately when needed
         const cartData = await getCart();
+        console.log('CartContext: Cart fetch successful:', cartData);
 
         // If checkout was completed and cart was cleared, don't override the cleared state
         if (cartClearedRef.current && (!cartData || cartData.items.length === 0)) {
@@ -172,7 +189,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setCart(cartData);
         }
       } catch (err: any) {
-        console.error("Failed to fetch cart:", err);
+        console.error("CartContext: Failed to fetch cart:", err);
+        console.error("CartContext: Error details:", {
+          message: err.message,
+          status: err.status,
+          name: err.name,
+          stack: err.stack
+        });
 
         // Check for various authentication error patterns
         const isAuthError = err.message.includes('Authentication token not found') ||
@@ -202,7 +225,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     fetchCartPromiseRef.current = fetchPromise;
 
     return fetchPromise;
-  }, [isTokenValid, isCheckingOut]);
+  }, [isTokenValid, isCheckingOut, pathname]);
 
   useEffect(() => {
     // Fetch both cart and credits on initial load
@@ -376,7 +399,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(previousCart);
       setUserCredits(previousCredits);
 
-      throw err;
+      // Check if it's a payment API error and provide user-friendly message
+      const isPaymentApiError = err.message.includes('technical difficulties') ||
+        err.message.includes('payment system') ||
+        err.message.includes('support team');
+
+      if (isPaymentApiError) {
+        throw new Error(err.message);
+      } else {
+        throw new Error('We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.');
+      }
     } finally {
       // Always release the checkout lock and reset checkout state
       checkoutLockRef.current = false;
@@ -418,8 +450,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return approvalUrl;
     } catch (err: any) {
       console.error("PayPal checkout failed:", err);
-      setError(err.message);
-      throw err;
+
+      // Check if it's a payment API error and provide user-friendly message
+      const isPaymentApiError = err.message.includes('technical difficulties') ||
+        err.message.includes('payment system') ||
+        err.message.includes('support team');
+
+      const errorMessage = isPaymentApiError ? err.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -443,8 +483,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return result;
     } catch (err: any) {
       console.error("Cashfree checkout failed:", err);
-      setError(err.message);
-      throw err;
+
+      // Check if it's a payment API error and provide user-friendly message
+      const isPaymentApiError = err.message.includes('technical difficulties') ||
+        err.message.includes('payment system') ||
+        err.message.includes('support team');
+
+      const errorMessage = isPaymentApiError ? err.message : 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.';
+
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

@@ -114,6 +114,22 @@ class CashfreePaymentService {
 
         } catch (error) {
             console.error('Payment processing error:', error);
+
+            // Check if it's an API-related error
+            const isApiError = error instanceof Error && (
+                error.message.includes('Failed to create payment session') ||
+                error.message.includes('Failed to verify payment') ||
+                error.message.includes('Failed to initialize payment system') ||
+                error.message.includes('Authentication token not found')
+            );
+
+            if (isApiError) {
+                return {
+                    status: 'failed',
+                    message: 'We\'re experiencing technical difficulties with our payment system. Please contact our support team for assistance.'
+                };
+            }
+
             return {
                 status: 'failed',
                 message: error instanceof Error ? error.message : 'Payment processing failed'
